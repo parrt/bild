@@ -17,22 +17,37 @@ def modtime(fname):
     except:
         return None
 
-def build(*specs):
-    for spec in specs:
-        print spec
-        task = spec[0]
-        map = spec[1]
-        for src in map:
-            print "build",map[src],"from",src,"using",task
+def run(spec):
+    print spec
+    task = spec[0]
+    map = spec[1]
+    for src in map:
+        print "build",map[src],"from",src,"using",task
 
-def antlr(g):
+def build(*tasks):
+    print "tasks",tasks
+    for task in tasks:
+        for f in task.func_defaults:
+            print f
+        task()
+
+def init():
+    print "init"
+
+def antlr(g, depends=(init,)):
+    for d in depends:
+        d()
     print "antlr4", g
 
-def javac(f):
+def javac(f, depends=(antlr,)):
     print "javac", f
 
-mantra       = (antlr, {"Mantra.g4":["MantraParser.java", "MantraLexer.java"]})
-mantrajava   = (javac, {"T.java":"T.class"})
+mantra       = (antlr, {"Mantra.g4": ["MantraParser.java", "MantraLexer.java"]})
+mantrajava   = (javac, {"T.java": "T.class"})
 
-build(mantra, mantrajava)
+def task_antlr(depends=(init,)):
+    for d in depends:
+        d()
+
+run(mantra)
 

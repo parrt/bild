@@ -46,32 +46,31 @@ def run(spec):
 	else:
 		task() # no src -> target, just exec
 
-# def buildtasks(*tasks):
-# 	print "tasks", tasks
-# 	for task in tasks:
-# 		for f in task.func_defaults:
-# 			print f
-# 		task()
-
 def task_init():
 	print "init"
 
 def antlr(g):
 	print "antlr4", g
 
-def javac(f):
-	print "javac", f
+def javac(f,args=""):
+	# if file or dir
+	print "javac",args, f
 
+def jar(files):
+	print files
 
 # target defs are tuples: (task-to-exec, {src:target}, dependencies)
 init = (task_init,_,_)
 mantra = (antlr, {"Mantra.g4": ["MantraParser.java", "MantraLexer.java"]}, init)
-mantrajava = (javac, {"MantraParser.java": "MantraParser.class"}, [mantra,init])
+mantrajava = (lambda x: javac(x,"-g"), {"MantraParser.java": "MantraParser.class"}, [mantra,init])
+compilesrc = (javac, {"src": "out"}, [mantra,init]) #dirs
+mkjar = (jar, {"app.jar":["resources","out"]}, compilesrc)
+# args to task? nah, make new task. can have generic javac then make myjavac that
+# invokes javac with correct args. Too bad lambdas can only be expressions.
+# actually, that's enough. can call task with args!
+mkjar2 = (lambda x: jar(x), {"app.jar":["resources","out"]}, compilesrc)
+
 all = [init,mantra] # can be list of targets
 
-def task_antlr(depends=(init,)):
-	for d in depends:
-		d()
-
-run(all)
+run(mantrajava)
 

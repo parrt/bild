@@ -1,11 +1,12 @@
 import os
+import sys
 
 
 def modtime(fname):
     try:
         return os.path.getmtime(fname)
     except:
-        return None
+        return sys.float_info.max
 
 
 def files(dir, suffix=None):
@@ -60,13 +61,27 @@ def javac_targets(srcdir, trgdir):
         mapping[javafiles[i]] = classfiles[i]
     return mapping
 
+
+def outofdate(map):  # accept map<string,string> or map<string,list<string>>
+    """
+    Return list<string> files to build since they are out of date
+    """
+    out = []
+    for src in map:
+        trg = map[src]
+        if type(trg) == type([]):
+            print "can't handle lists yet"
+        print modtime(src), modtime(trg)
+        if modtime(trg) > modtime(src):  # bigger is newer since longer since epoch
+            print "target newer so no build"
+            out.append(src)
+    return out
+
 #print javac_targets("/Users/parrt/mantra/code/compiler/src/java", "out")
 
 # out = javac_targets("/Users/parrt/mantra/code/compiler/src/java", "/tmp")
-out = javac_targets("../../antlr/code/antlr3/tool/src/main/java", "/tmp")
-for src in out:
-    trg = out[src]
-    print modtime(src), modtime(trg)
+map = javac_targets("../../antlr/code/antlr3/tool/src/main/java", "/tmp")
+print outofdate(map)
 
 # now we can compare files(dir,".java") with javac_targets(dir,trgdir)
 # for file mod

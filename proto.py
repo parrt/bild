@@ -1,19 +1,8 @@
 import os
 
-# Copyright (c) 2007-2008,
-#   Bill McCloskey    <bill.mccloskey@gmail.com>
-# All rights reserved.
-# BSD license
-# Borrow from http://web.archive.org/web/20090117001916/http://www.cs.berkeley.edu/~billm/memoize.py
 def modtime(fname):
-	"""Return the modification time of a given filename, or None
-	if there is a problem. (i.e: file doesn't exist.)
-	"""
 	try:
-		if os.path.isdir(fname):
-			return 1
-		else:
-			return os.path.getmtime(fname)
+		return os.path.getmtime(fname)
 	except:
 		return None
 
@@ -51,18 +40,29 @@ def replsuffix(files, suffix):
 
 def javac_targets(srcdir, trgdir):
 	"""
-	Return a list of files javac would create given a subdir of java
+	Return a map<string,string> of files javac would create given a subdir of java
 	files and a target dir. E.g.,
 	javac_targets("/Users/parrt/mantra/code/compiler/src/java", "out")
 	generates
-		out/mantra/Tool.class
-	for file:
-		.../src/java/mantra/Tool.java
+		{".../src/java/mantra/Tool.java":"out/mantra/Tool.class", ...}
 	"""
-	trgfiles = replsuffix(files(srcdir, ".java"), ".class")
-	return [f.replace(srcdir,trgdir) for f in trgfiles]
+	mapping = {}
+	javafiles = files(srcdir, ".java")
+	classfiles = replsuffix(javafiles, ".class")
+	classfiles = [f.replace(srcdir,trgdir) for f in classfiles] # shift to trg dir
+	for i in range(len(javafiles)):
+		mapping[javafiles[i]] = classfiles[i]
+	return mapping
 
-print javac_targets("/Users/parrt/mantra/code/compiler/src/java", "out")
+#print javac_targets("/Users/parrt/mantra/code/compiler/src/java", "out")
+
+out = javac_targets("/Users/parrt/mantra/code/compiler/src/java", "/tmp")
+for src in out:
+	trg = out[src]
+	print modtime(src), modtime(trg)
+
+# now we can compare files(dir,".java") with javac_targets(dir,trgdir)
+# for file mod
 
 _ = None
 

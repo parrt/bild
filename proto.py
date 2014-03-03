@@ -17,6 +17,53 @@ def modtime(fname):
 	except:
 		return None
 
+def files(dir, suffix=None):
+	"""
+	Return list<string> all files in subtree dir, optionally matching
+	a suffix like ".java"
+	"""
+	matching_files = []
+	for root, subFolders, files in os.walk(dir):
+		for f in files:
+			fullname = os.path.join(root, f)
+			if suffix is not None:
+				ext = os.path.splitext(fullname)[1]
+				if ext == suffix:
+					matching_files.append(fullname)
+			else:
+					matching_files.append(fullname)
+	return matching_files
+
+def replsuffix(files, suffix):
+	"""
+	Return list<string> all files with their .suffix replaced
+	"""
+	outfiles = []
+	if suffix is None: return
+	for f in files:
+		fname, ext = os.path.splitext(f)
+		newfname = fname+suffix
+		outfiles.append(newfname)
+	return outfiles
+
+# print files(".", ".xml")
+# print files(".")
+
+def javac_targets(srcdir, trgdir):
+	"""
+	Return a list of files javac would create given a subdir of java
+	files and a target dir. E.g.,
+	javac_targets("/Users/parrt/mantra/code/compiler/src/java", "out")
+	generates
+		out/mantra/Tool.class
+	for file:
+		.../src/java/mantra/Tool.java
+	"""
+	trgfiles = replsuffix(files(srcdir, ".java"), ".class")
+	return [f.replace(srcdir,trgdir) for f in trgfiles]
+
+print javac_targets("/Users/parrt/mantra/code/compiler/src/java", "out")
+
 _ = None
 
 completed = set() # which *targets* have been built.

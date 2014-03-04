@@ -242,6 +242,11 @@ def target_jar():
 def target_all():
 	target_jar()
 
+# myantlr = (target_antlr(), target_init())
+# mycompile = (target_compile, [target_init,target_antlr])
+# myjar = (target_jar, target_compile)
+# build(myjar)
+
 if len(sys.argv) == 1:
 	target_all()
 else:

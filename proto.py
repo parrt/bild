@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import errno
+import re
 
 # evil globals
 _ = None
@@ -67,9 +68,6 @@ def replsuffix(files, suffix):
 	return outfiles
 
 
-# print files(".", ".xml")
-# print files(".")
-
 def javac_targets(srcdir, trgdir):
 	"""
 	Return a map<string,string> of files javac would create given a subdir of java
@@ -88,8 +86,45 @@ def javac_targets(srcdir, trgdir):
 		mapping[javafiles[i]] = classfiles[i]
 	return mapping
 
+def grep(file,regex):
+	matches = []
+	with open(file) as f:
+		contents = f.read()
+		m = re.search(regex, contents)
+		if m:
+			matches.append(m.group())
+	return matches
 
-def outofdate(map):  # accept map<string,string> or map<string,list<string>>
+
+def antlr_targets(srcdir, trgdir):
+	"""
+	Return a map<string,string> of files antlr would create given a subdir of grammars
+	files and a target dir. E.g.,
+	javac_targets("/Users/parrt/mantra/code/compiler/src/java", "out")
+	generates
+		{".../src/grammars/foo/T.g4":["out/foo/TParser.java", ...}
+	"""
+	srcdir = uniformpath(srcdir)
+	trgdir = uniformpath(trgdir)
+	mapping = {}
+	gfiles = files(srcdir, ".g4")
+	for f in gfiles:
+		trgs = []
+		fdir,fsuffix = os.path.splitext(f)
+		gname = os.path.basename(fdir)
+		fullgname = os.path.join(trgdir,gname)
+		lexer = grep(f,r"lexer\s+grammar")
+		parser = grep(f,r"parser\s+grammar")
+		if len(lexer)>0 or len(parser)>0:
+			print "a lexer or parser"
+			mapping[f] = fullgname+".java"
+		else:
+			# must be combined grammar
+			print "a combined"
+			mapping[f] = [fullgname+"Parser.java",fullgname+"Lexer.java"]
+	return mapping
+
+def stale(map):  # accept map<string,string> or map<string,list<string>>
 	"""
 	Return map<string,string-or-list> with files to build as they are out of date
 	"""
@@ -124,9 +159,17 @@ def build(target):
 		for target in target:
 			build(target)
 		return
-	map = target[0]
-	task = target[1]
-	dependencies = target[2]
+	if len(target)==2:
+		map = None
+		task = target[0]
+		dependencies = target[1]
+	elif len(target)==3:
+		map = target[0]
+		task = target[1]
+		dependencies = target[2]
+	else:
+		print "build tuple must have 2 or 3 elements: ({src:target}, task-to-exec, dependencies)"
+		return
 	if id(target) in completed:
 		return
 	completed.add(id(target))
@@ -138,7 +181,7 @@ def build(target):
 		else:
 			build(dependencies)
 	if map is not None:
-		tobuild = outofdate(map)
+		tobuild = stale(map)
 		if len(tobuild)==0:
 			print target[1],"up to date"
 		for src in tobuild:
@@ -152,17 +195,41 @@ def task_init():
 	print "init"
 
 
-def antlr(src,trg):
-	print "antlr4",src
+def antlr(src,trg,args=[]):
+	print "antlr4",src,trg
+	if type(trg) == type([]):
+		outdir = os.path.dirname(trg[0])
+	else:
+		outdir = os.path.dirname(trg)
+	if outdir=='':
+		outdir = "."
+	cmd = ["java","org.antlr.v4.Tool","-o",outdir]+args+[src]
+	print cmd
+	subprocess.call(cmd)
 
 
-def javac(src, trg, cp=CLASSPATH, outdir=".", args=[]):
+def javac(src, trg, cp=None, outdir=".", args=[]):
 	outdir = uniformpath(outdir)
 	mkdirs(outdir)
+	if cp is not None:
+		cp = cp + os.pathsep + outdir + os.pathsep + CLASSPATH
+	else:
+		cp = outdir + os.pathsep + CLASSPATH
 	cmd = ["javac", "-d", outdir, "-cp", cp] + args + [src]
 	print cmd
 	subprocess.call(cmd)
 
+def javac2(srcdir, trgdir=".", cp=None, args=[]):
+	srcdir = uniformpath(srcdir)
+	trgdir = uniformpath(trgdir)
+	mkdirs(trgdir)
+	if cp is not None:
+		cp = cp + os.pathsep + trgdir + os.pathsep + CLASSPATH
+	else:
+		cp = trgdir + os.pathsep + CLASSPATH
+	#cmd = ["javac", "-sourcepath", srcdir, "-d", trgdir, "-cp", cp] + args + [src]
+	# print cmd
+	# subprocess.call(cmd)
 
 def jar(dir, jarfile, files):
 	mkdirs(dir)
@@ -171,21 +238,30 @@ def jar(dir, jarfile, files):
 	subprocess.call(cmd)
 
 # target defs are tuples: ({src:target}, task-to-exec, dependencies)
-init = (_, task_init, _)
-mantra = ({"Mantra.g4": ["MantraParser.java", "MantraLexer.java"]}, antlr, init)
+init = (task_init, _)
+mantra = (antlr_targets("src/grammars", "gen/org/foo"),
+		  lambda src,trg : antlr(src,trg,["-package","org.foo"]), init)
 compilesrc = (javac_targets("src/java", "out"),
 			  lambda src,trg: javac(src,trg,outdir="out"),
 			  [mantra, init])
-mkjar = (_, lambda : jar(dir="dist",jarfile="app.jar",files=["resources", "out"]), compilesrc)
+compileparser = (javac_targets("gen", "out"),
+				 lambda src,trg: javac(src,trg,outdir="out"),
+				 [mantra, init])
+mkjar = (lambda : jar(dir="dist",jarfile="app.jar",files=["resources", "out"]),
+		 [compilesrc,compileparser])
 
 all = [init, mantra]  # can be list of targets
 
-build(mkjar)
+#build(mkjar)
+
+print stale(javac_targets("src/java", "out"))
 
 
 class JavaProj:
 	def __init__(self, name):
 		self.name = name
+		self.outdir = "out"
+		self.distdir = "dist"
 		return
 
 	def java(self, *srcdirs):
@@ -202,6 +278,8 @@ class JavaProj:
 
 
 myproj = JavaProj("myproj")
+myproj.outdir = "out"
+myproj.distdir = "dist"
 myproj.java("src/java", "gen")
 myproj.resources("resources")
 myproj.libs("/usr/local/lib/antlr-4.2-complete.jar")

@@ -126,6 +126,19 @@ def antlr_targets(srcdir, trgdir):
 	return mapping
 
 
+def newer(a,b):
+	"""
+	Return true if a newer than b
+	"""
+	return modtime(a) < modtime(b)  # smaller is earlier
+
+def older(a,b):
+	"""
+	Return true if a older or same as b
+	"""
+	return not newer(a,b)
+
+
 def stale(map):  # accept map<string,string> or map<string,list<string>>
 	"""
 	Return map<string,string-or-list> with files to build as they are out of date
@@ -192,9 +205,11 @@ def javac(srcdir, trgdir=".", cp=None, args=[]):
 	print cmd
 	subprocess.call(cmd)
 
-def jar(dir, jarfile, files):
-	mkdirs(dir)
-	cmd = ["jar","cf", os.path.join(dir,jarfile)] + files
+def jar(trgdir, jarfile, files):
+	mkdirs(trgdir)
+	if type(files) == type(""):
+		files = [files]
+	cmd = ["jar","cf", os.path.join(trgdir,jarfile)] + files
 	print cmd
 	subprocess.call(cmd)
 
@@ -203,15 +218,12 @@ def jar(dir, jarfile, files):
 def target_init():
 	if done(): return
 	print "init"
-	return
-
 
 def target_antlr():
 	if done(): return
 	target_init()
 	antlr("src/grammars", "gen/org/foo", package="org.foo")
 	print "antlr"
-	return
 
 
 def target_compile():
@@ -221,11 +233,14 @@ def target_compile():
 	print "compile"
 	javac("src/java", "out")
 	javac("gen", "out")
-	return
+
+def target_jar():
+	if done(): return
+	target_compile()
+	jar("dist", "app.jar", ["out","resources"])
 
 def target_all():
-	target_compile()
-	return
+	target_jar()
 
 if len(sys.argv) == 1:
 	target_all()

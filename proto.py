@@ -1,18 +1,38 @@
 import os
 import sys
+import subprocess
+import errno
+
+# evil globals
+_ = None
+CLASSPATH = os.environ['CLASSPATH']
+completed = set()  # which *targets* have been built.
 
 
 def modtime(fname):
 	try:
 		return os.path.getmtime(fname)
 	except:
-		return sys.float_info.max # meaning mod date in future if file not there
+		return 0 # mod date of epoch means ancient  sys.float_info.max  # meaning mod date in future if file not there
 
 
 def uniformpath(dir):
 	dir = os.path.expanduser(dir)  # ~parrt -> /Users/parrt on unix
 	dir = os.path.abspath(dir)  # expand relative dirs
 	return dir
+
+
+def mkdirs(path):
+	"""
+	From: http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+	"""
+	try:
+		os.makedirs(path)
+	except OSError as exc:  # Python >2.5
+		if exc.errno == errno.EEXIST and os.path.isdir(path):
+			pass
+		else:
+			raise
 
 
 def files(dir, suffix=None):
@@ -78,9 +98,11 @@ def outofdate(map):  # accept map<string,string> or map<string,list<string>>
 		trg = map[src]
 		if type(trg) == type([]):
 			print "can't handle lists yet"
-		# print modtime(src), modtime(trg)
+			out[src] = trg
+			continue
 		# print src,"->",trg
-		if modtime(trg) > modtime(src):  # bigger is newer since longer since epoch
+		# print modtime(src), modtime(trg)
+		if modtime(trg) < modtime(src):  # smaller is earlier
 			# print "target newer so no build"
 			out[src] = trg
 	return out
@@ -91,10 +113,6 @@ def outofdate(map):  # accept map<string,string> or map<string,list<string>>
 
 # now we can compare files(dir,".java") with javac_targets(dir,trgdir)
 # for file mod
-
-_ = None
-
-completed = set()  # which *targets* have been built.
 
 def build(target):
 	"""
@@ -112,7 +130,7 @@ def build(target):
 	if id(target) in completed:
 		return
 	completed.add(id(target))
-	print "run", target
+	print "build", target
 	if dependencies is not None:
 		if type(dependencies) is type([]):
 			for d in dependencies:
@@ -120,9 +138,12 @@ def build(target):
 		else:
 			build(dependencies)
 	if map is not None:
-		for src in map:
-			print "build", map[src], "from", src, "using", task, "depends on", dependencies
-			task(src)
+		tobuild = outofdate(map)
+		if len(tobuild)==0:
+			print target[1],"up to date"
+		for src in tobuild:
+			print "build", map[src], "from", src  #, "using", task, "depends on", dependencies
+			task(src,map[src])
 	else:
 		task()  # no src -> target, just exec
 
@@ -131,44 +152,54 @@ def task_init():
 	print "init"
 
 
-def antlr(g):
-	print "antlr4", g
+def antlr(src,trg):
+	print "antlr4",src
 
 
-def javac(f, args=""):
-	# if file or dir
-	print "javac", args, f
+def javac(src, trg, cp=CLASSPATH, outdir=".", args=[]):
+	outdir = uniformpath(outdir)
+	mkdirs(outdir)
+	cmd = ["javac", "-d", outdir, "-cp", cp] + args + [src]
+	print cmd
+	subprocess.call(cmd)
 
-def jar(files):
-	print files
+
+def jar(dir, jarfile, files):
+	mkdirs(dir)
+	cmd = ["jar","cf", os.path.join(dir,jarfile)] + files
+	print cmd
+	subprocess.call(cmd)
 
 # target defs are tuples: ({src:target}, task-to-exec, dependencies)
 init = (_, task_init, _)
 mantra = ({"Mantra.g4": ["MantraParser.java", "MantraLexer.java"]}, antlr, init)
-mantrajava = ({"MantraParser.java": "MantraParser.class"},
+compilesrc = (javac_targets("src/java", "out"),
+			  lambda src,trg: javac(src,trg,outdir="out"),
 			  [mantra, init])
-compilesrc = (javac_targets("../../antlr/code/antlr3/tool/src/main/java", "/tmp"),
-			  lambda x: javac(x, ["-d", "/tmp"]),
-			  [mantra, init])
-mkjar = ({"app.jar": ["resources", "out"]}, jar, compilesrc)
+mkjar = (_, lambda : jar(dir="dist",jarfile="app.jar",files=["resources", "out"]), compilesrc)
 
 all = [init, mantra]  # can be list of targets
 
-build(compilesrc)
+build(mkjar)
+
 
 class JavaProj:
 	def __init__(self, name):
 		self.name = name
 		return
 
-	def java(self,*srcdirs):
+	def java(self, *srcdirs):
 		return
-	def resources(self,*resdirs):
+
+	def resources(self, *resdirs):
 		return
-	def libs(self,*libs):
+
+	def libs(self, *libs):
 		return
-	def artifacts(self,*includes):
+
+	def artifacts(self, *includes):
 		return
+
 
 myproj = JavaProj("myproj")
 myproj.java("src/java", "gen")

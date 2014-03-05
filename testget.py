@@ -1,4 +1,3 @@
-from bundlebuilder import LIB
 import urllib2
 import os
 import errno

@@ -211,11 +211,17 @@ def javac(srcdir, trgdir=".", cp=None, args=[]):
 	print cmd
 	subprocess.call(cmd)
 
-def jar(trgdir, jarfile, files):
+def jar(jarfile, contents=".", srcdir="."):
+	trgdir = os.path.dirname(jarfile)
 	mkdirs(trgdir)
-	if type(files) == type(""):
-		files = [files]
-	cmd = ["jar","cf", os.path.join(trgdir,jarfile)] + files
+	if type(contents) == type(""):
+		contents = [contents]
+	contents_with_C = []
+	for f in contents:
+		contents_with_C.append("-C")
+		contents_with_C.append(srcdir)
+		contents_with_C.append(f)
+	cmd = ["jar","cmf", "out/META-INF/MANIFEST.MF", jarfile] + contents_with_C
 	print cmd
 	subprocess.call(cmd)
 

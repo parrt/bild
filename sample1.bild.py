@@ -1,7 +1,7 @@
 from bild import *
 
 def T(): # there is a T.g4 grammar in src/grammars
-	antlr("src/grammars", "gen/org/foo", package="org.foo")
+	antlr4("src/grammars", "gen/org/foo", package="org.foo")
 
 def compile():
 	require(T)

@@ -5,11 +5,14 @@ import re
 import inspect
 import sys
 import shutil
+import urllib2
 
 # evil globals
 _ = None
-CLASSPATH = os.environ['CLASSPATH']
-completed = set()  # which *targets* have been built.
+bild_completed = set()  # which *targets* have been built.
+BILD = os.path.expanduser("~/.bild")
+JARCACHE = os.path.join(BILD,"jars")
+CLASSPATH = JARCACHE+"/*" +os.pathsep+ os.environ['CLASSPATH']
 
 
 def modtime(fname):
@@ -168,28 +171,20 @@ def stale(map):  # accept map<string,string> or map<string,list<string>>
 
 def require(target):
 	#caller = inspect.currentframe().f_back.f_code.co_name
-	if id(target) in completed:	return
-	completed.add(id(target))
+	if id(target) in bild_completed:	return
+	bild_completed.add(id(target))
 	target()
 
-#def done():
-#	# caller_index = 1
-#	# name_index = 3
-#	#caller = inspect.stack()[caller_index][name_index]
-#	caller = inspect.currentframe().f_back.f_code.co_name
-#	if caller in completed:
-#		return True
-#	completed.add(caller)
-#	return False
-
-def antlr(srcdir,trgdir=".",package=None,args=[]):
-	#print "antlr4",srcdir,trgdir
+def antlr4(srcdir,trgdir=".",cp=CLASSPATH,package=None,version="4.2",args=[]):
 	map = antlr_targets(srcdir, trgdir)
 	tobuild = stale(map).keys()
 	if len(tobuild)==0:
 		return
+	jarname = "antlr-" + version + "-complete.jar"
+	if jarname not in cp:
+		download("http://www.antlr.org/download/"+jarname, JARCACHE)
 	if package is not None:
-		cmd = ["java","-cp",CLASSPATH,
+		cmd = ["java","-cp",cp,
 			   "org.antlr.v4.Tool",
 			   "-o",trgdir,
 			   "-package",package]+args+tobuild
@@ -225,10 +220,21 @@ def jar(trgdir, jarfile, files):
 	subprocess.call(cmd)
 
 def go():
-	antlr("src/grammars", "gen/org/foo", package="org.foo")
+	antlr4("src/grammars", "gen/org/foo", package="org.foo")
 	javac("src/java", "out")
 	javac("gen", "out")
 	jar("dist", "app.jar", ["out","resources"])
+
+def download(url,trgdir=".",force=False):
+	file_name = url.split('/')[-1]
+	mkdirs(trgdir)
+	target_name = os.path.join(trgdir,file_name)
+	if os.path.exists(target_name) and not force:
+		return
+	response = urllib2.urlopen(url)
+	output = open(target_name,'wb')
+	output.write(response.read())
+	output.close()
 
 def function(name):
 	def afunc():pass

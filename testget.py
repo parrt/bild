@@ -3,8 +3,7 @@ import os
 import errno
 
 BILD = os.path.expanduser("~/.bild")
-LIBCACHE = BILD+"/libs"
-JARCACHE = BILD+"/libs/jars"
+JARCACHE = os.path.join(BILD,"jars")
 
 def modtime(fname):
 	try:

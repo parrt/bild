@@ -168,8 +168,8 @@ def stale(map):  # accept map<string,string> or map<string,list<string>>
 
 def require(target):
 	#caller = inspect.currentframe().f_back.f_code.co_name
-	if target not in completed:	return
-	completed.add(target)
+	if id(target) in completed:	return
+	completed.add(id(target))
 	target()
 
 #def done():

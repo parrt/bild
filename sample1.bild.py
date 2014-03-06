@@ -4,12 +4,12 @@ def T(): # there is a T.g4 grammar in src/grammars
 	antlr("src/grammars", "gen/org/foo", package="org.foo")
 
 def compile():
-	require(T())
+	require(T)
 	javac("src/java", "out")
 	javac("gen", "out")
 
 def mkjar():
-	require(compile())
+	require(compile)
 	jar("dist", "app.jar", ["out","resources"])
 
 def all():
@@ -20,7 +20,7 @@ def clean():
 	rmdir("gen")
 
 def clean_all():
-	require(clean())
+	require(clean)
 	rmdir("dist")
 
 """

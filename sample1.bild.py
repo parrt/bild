@@ -32,11 +32,4 @@ def clean_all():
 	require(clean)
 	rmdir("dist")
 
-"""
-manifest {
-        attributes("Implementation-Title": "Gradle",
-        "Implementation-Version": version)
-    }
-"""
-
 processargs(globals()) # if you want cmd-line arg processing. Or, just call your target

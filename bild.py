@@ -62,6 +62,9 @@ def files(dir, suffix=None):
 				matching_files.append(fullname)
 	return matching_files
 
+def copytree(src,dst,ignore=None):
+	rmdir(dst)
+	shutil.copytree(src,dst,ignore=ignore)
 
 def replsuffix(files, suffix):
 	"""
@@ -250,7 +253,7 @@ def function(name):
 			return f
 	return None
 
-def build(globals):
+def processargs(globals):
 	if len(sys.argv) == 1:
 		target = globals["all"]
 	else:

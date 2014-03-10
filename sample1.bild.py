@@ -15,6 +15,7 @@ def compile():
 
 def mkjar():
 	require(compile)
+	copytree(src="resources", dst="out/resources")
 	metadir = os.path.join("out", "META-INF")
 	mkdirs(metadir)
 	manifest = """Version: %s
@@ -41,4 +42,4 @@ manifest {
     }
 """
 
-build(globals()) # if you want cmd-line arg processing. Or, just call your target
+processargs(globals()) # if you want cmd-line arg processing. Or, just call your target

@@ -214,7 +214,7 @@ def javac(srcdir, trgdir=".", cp=None, args=[]):
 	print cmd
 	subprocess.call(cmd)
 
-def jar(jarfile, contents=".", srcdir="."):
+def jar(jarfile, contents=".", srcdir=".", manifest=None):
 	trgdir = os.path.dirname(jarfile)
 	mkdirs(trgdir)
 	if type(contents) == type(""):
@@ -224,15 +224,15 @@ def jar(jarfile, contents=".", srcdir="."):
 		contents_with_C.append("-C")
 		contents_with_C.append(srcdir)
 		contents_with_C.append(f)
-	cmd = ["jar","cmf", "out/META-INF/MANIFEST.MF", jarfile] + contents_with_C
+	# write manifest
+	metadir = os.path.join(srcdir, "META-INF")
+	mkdirs(metadir)
+	with open(os.path.join(metadir,"MANIFEST.MF"), "w") as mf:
+		mf.write(manifest)
+	mfile = os.path.join(srcdir, "META-INF/MANIFEST.MF")
+	cmd = ["jar","cmf", mfile, jarfile] + contents_with_C
 	print cmd
 	subprocess.call(cmd)
-
-def go():
-	antlr4("src/grammars", "gen/org/foo", package="org.foo")
-	javac("src/java", "out")
-	javac("gen", "out")
-	jar("dist", "app.jar", ["out","resources"])
 
 def download(url,trgdir=".",force=False):
 	file_name = url.split('/')[-1]

@@ -16,14 +16,10 @@ def compile():
 def mkjar():
 	require(compile)
 	copytree(src="resources", dst="out/resources")
-	metadir = os.path.join("out", "META-INF")
-	mkdirs(metadir)
 	manifest = """Version: %s
 Main-Class: org.foo.Blort
 """ % projversion
-	with open(os.path.join(metadir,"MANIFEST.MF"), "w") as mf:
-		mf.write(manifest)
-	jar("dist/app.jar", srcdir="out")
+	jar("dist/app.jar", srcdir="out", manifest=manifest)
 
 def all():
 	mkjar()
@@ -38,7 +34,8 @@ def clean_all():
 
 """
 manifest {
-        attributes("Implementation-Title": "Gradle", "Implementation-Version": version)
+        attributes("Implementation-Title": "Gradle",
+        "Implementation-Version": version)
     }
 """
 

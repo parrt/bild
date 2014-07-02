@@ -1,4 +1,4 @@
-from bild import *
+from bilder import *
 
 # can set as you like:
 # CLASSPATH = ...

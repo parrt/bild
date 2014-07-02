@@ -261,18 +261,21 @@ def stale(map):  # accept map<string,string> or map<string,list<string>>
 			for t in trg:
 				# print src,"->",t
 				# print modtime(src), modtime(t)
-				if modtime(t) < modtime(src):  # smaller is earlier
+				if is_stale(src,t):
 					isstale = True
 					break
 		else:
 			# print src,"->",trg
 			# print modtime(src), modtime(trg)
-			if modtime(trg) < modtime(src):  # smaller is earlier
+			if is_stale(src,trg):
 				# print "target newer so no build"
 				isstale = True
 		if isstale:
 			out[src] = trg
 	return out
+
+def is_stale(src,trg):
+	return modtime(trg) < modtime(src);  # smaller is earlier
 
 
 def require(target):

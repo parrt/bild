@@ -16,8 +16,51 @@ _ = None
 bild_completed = set()  # which *targets* have been built.
 BILD = os.path.expanduser("~/.bild")
 JARCACHE = os.path.join(BILD, "jars")
-CLASSPATH = JARCACHE + "/*" + os.pathsep + os.environ['CLASSPATH']
+#CLASSPATH = JARCACHE + "/*" + os.pathsep + os.environ['CLASSPATH']
 
+def findjdks_win():
+	return {}
+
+def findjdks_linux():
+	"""
+	CentOS: /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.55.x86_64/jre/bin/java
+					/usr/java/jdk1.7.0_51
+	ubuntu: /usr/lib/jvm/java-6-openjdk/ for OpenJDK
+					/usr/lib/jvm/* for Oracle JDK
+	"""
+	versions = {}
+	for jdk in glob.glob("/usr/lib/jvm/*") + glob.glob("/usr/java/*"):
+			name = os.path.basename(jdk)
+			if name.startswith("java-1.6") or name.startswith("jdk1.6"):
+					versions["1.6"] = jdk
+			if name.startswith("java-1.7") or name.startswith("jdk1.7"):
+					versions["1.7"] = jdk
+			if name.startswith("java-1.8") or name.startswith("jdk1.8"):
+					versions["1.8"] = jdk
+	return versions
+
+def findjdks_mac():
+	"""find Java installations on a mac"""
+	versions = {}
+	for jdk in glob.glob("/Library/Java/JavaVirtualMachines/*"):
+		name = os.path.basename(jdk)
+		if name.startswith("1.6."):
+			versions["1.6"] = jdk+"/Contents/Home"
+		elif name.startswith("jdk1.7."):
+			versions["1.7"] = jdk+"/Contents/Home"
+		elif name.startswith("jdk1.8."):
+			versions["1.8"] = jdk+"/Contents/Home"
+	return versions
+
+def findjdks():
+	if sys.platform == 'win32':
+		return findjdks_win()
+	if sys.platform == 'darwin':
+		return findjdks_mac()
+	if sys.platform == 'linux2':
+		return findjdks_linux()
+
+jdk = findjdks()
 
 def modtime(fname):
 	try:
@@ -248,10 +291,10 @@ def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
 	#if jarname not in filelist(JARCACHE):
 	download("http://www.antlr3.org/download/" + jarname, JARCACHE)
 	if package is not None:
-		package = re.sub('[.]', '/', package)
+		packageAsDir = re.sub('[.]', '/', package)
 		cmd = ["java", "-cp", os.path.join(JARCACHE, jarname),
 			   "org.antlr.Tool",
-			   "-o", os.path.join(trgdir, package)] + args + tobuild
+			   "-o", os.path.join(trgdir, packageAsDir)] + args + tobuild
 	else:
 		cmd = ["java", "org.antlr.Tool", "-o", trgdir] + args + tobuild
 	print cmd
@@ -267,10 +310,10 @@ def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
 	# if jarname not in filelist(JARCACHE):
 	download("http://www.antlr.org/download/" + jarname, JARCACHE)
 	if package is not None:
-		package = re.sub('[.]', '/', package)
+		packageAsDir = re.sub('[.]', '/', package)
 		cmd = ["java", "-cp", os.path.join(JARCACHE, jarname),
 			   "org.antlr.v4.Tool",
-			   "-o", os.path.join(trgdir, package),
+			   "-o", os.path.join(trgdir, packageAsDir),
 			   "-package", package] + args + tobuild
 	else:
 		cmd = ["java", "org.antlr.v4.Tool", "-o", trgdir] + args + tobuild
@@ -278,7 +321,7 @@ def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
 	subprocess.call(cmd)
 
 
-def javac(srcdir, trgdir=".", cp=None, args=[]):
+def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
 	srcdir = uniformpath(srcdir)
 	trgdir = uniformpath(trgdir)
 	mkdirs(trgdir)
@@ -290,7 +333,10 @@ def javac(srcdir, trgdir=".", cp=None, args=[]):
 	if cp is None:
 		cp = trgdir + os.pathsep + JARCACHE + "/*"
 	# cmd = ["javac", "-sourcepath", srcdir, "-d", trgdir, "-cp", cp] + args + tobuild
-	cmd = ["javac", "-d", trgdir, "-cp", cp] + args + tobuild
+	javac="javac"
+	if version is not None:
+		javac = os.path.join(jdk[version],"bin/javac")
+	cmd = [javac, "-d", trgdir, "-cp", cp] + args + tobuild
 	print string.join(cmd, " ")
 	subprocess.call(cmd)
 

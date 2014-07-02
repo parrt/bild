@@ -1,29 +1,26 @@
 from bild import *
 
-####################################################################
-
-def target_antlr():
+def T(): # there is a T.g4 grammar in src/grammars
 	antlr("src/grammars", "gen/org/foo", package="org.foo")
 
-def target_compile():
-	require(target_antlr())
+def compile():
+	require(T())
 	javac("src/java", "out")
 	javac("gen", "out")
 
-def target_jar():
-	require(target_compile())
+def mkjar():
+	require(compile())
 	jar("dist", "app.jar", ["out","resources"])
 
-def target_all():
-	require(target_compile())
-	target_jar()
+def all():
+	mkjar()
 
-def target_clean():
+def clean():
 	rmdir("out")
 	rmdir("gen")
 
-def target_clean_all():
-	require(target_clean())
+def clean_all():
+	require(clean())
 	rmdir("dist")
 
 build(globals()) # if you want cmd-line arg processing. Or, just call your target

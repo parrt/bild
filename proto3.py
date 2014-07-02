@@ -1,5 +1,5 @@
 import bild
-import sys
+
 def antlr():
 	bild.antlr("src/grammars", "gen/org/foo", package="org.foo")
 

@@ -6,7 +6,6 @@ import sys
 import shutil
 import urllib2
 import glob
-import string
 from distutils import dir_util
 from distutils import file_util
 import zipfile
@@ -280,7 +279,9 @@ def is_stale(src,trg):
 
 def require(target):
 	# caller = inspect.currentframe().f_back.f_code.co_name
-	if id(target) in bild_completed:    return
+	if id(target) in bild_completed:
+		return
+	print "build", target.__name__
 	bild_completed.add(id(target))
 	target()
 
@@ -300,7 +301,7 @@ def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
 			   "-o", os.path.join(trgdir, packageAsDir)] + args + tobuild
 	else:
 		cmd = ["java", "org.antlr.Tool", "-o", trgdir] + args + tobuild
-	print cmd
+	# print cmd
 	subprocess.call(cmd)
 
 
@@ -320,7 +321,7 @@ def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
 			   "-package", package] + args + tobuild
 	else:
 		cmd = ["java", "org.antlr.v4.Tool", "-o", trgdir] + args + tobuild
-	print string.join(cmd, " ")
+	# print string.join(cmd, " ")
 	subprocess.call(cmd)
 
 
@@ -340,7 +341,7 @@ def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
 	if version is not None:
 		javac = os.path.join(jdk[version],"bin/javac")
 	cmd = [javac, "-d", trgdir, "-cp", cp] + args + tobuild
-	print string.join(cmd, " ")
+	# print string.join(cmd, " ")
 	subprocess.call(cmd)
 
 
@@ -361,7 +362,6 @@ def jar(jarfile, inputfiles=".", srcdir=".", manifest=None):
 		mf.write(manifest)
 	mfile = os.path.join(srcdir, "META-INF/MANIFEST.MF")
 	cmd = ["jar", "cmf", mfile, jarfile] + contents_with_C
-	print cmd
 	subprocess.call(cmd)
 
 def unjar(jarfile, trgdir="."):
@@ -375,7 +375,14 @@ def javadoc(srcdir, trgdir, packages, recursive=True):
 	if recursive:
 		cmd += ["-subpackages"]
 	cmd += packages
-	print cmd
+	subprocess.call(cmd)
+
+def dot(src, trgdir=".", format="pdf"):
+	if not src.endswith(".dot"):
+		return
+	nosuffix = src[0:-4]
+	base = os.path.basename(nosuffix)
+	cmd = ["dot", "-T"+format, "-o"+os.path.join(trgdir,base+"."+format), src]
 	subprocess.call(cmd)
 
 def download(url, trgdir=".", force=False):
@@ -394,6 +401,7 @@ def download(url, trgdir=".", force=False):
 		output.close()
 
 
+"""
 def function(name):
 	def afunc():
 		pass
@@ -403,7 +411,7 @@ def function(name):
 		if type(f) == type(afunc) and f.__name__ == name:
 			return f
 	return None
-
+"""
 
 def processargs(globals):
 	if len(sys.argv) == 1:

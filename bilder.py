@@ -75,7 +75,7 @@ def uniformpath(dir):
 	return dir
 
 
-def mkdirs(path):
+def mkdir(path):
 	"""
 	From: http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
 	"""
@@ -327,7 +327,7 @@ def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
 def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
 	srcdir = uniformpath(srcdir)
 	trgdir = uniformpath(trgdir)
-	mkdirs(trgdir)
+	mkdir(trgdir)
 	map = javac_targets(srcdir, trgdir)
 	tobuild = stale(map).keys()
 	# print "build",stale(map)
@@ -346,7 +346,7 @@ def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
 
 def jar(jarfile, inputfiles=".", srcdir=".", manifest=None):
 	trgdir = os.path.dirname(jarfile)
-	mkdirs(trgdir)
+	mkdir(trgdir)
 	if type(inputfiles) == type(""):
 		inputfiles = [inputfiles]
 	contents_with_C = []
@@ -356,7 +356,7 @@ def jar(jarfile, inputfiles=".", srcdir=".", manifest=None):
 		contents_with_C.append(f)
 	# write manifest
 	metadir = os.path.join(srcdir, "META-INF")
-	mkdirs(metadir)
+	mkdir(metadir)
 	with open(os.path.join(metadir, "MANIFEST.MF"), "w") as mf:
 		mf.write(manifest)
 	mfile = os.path.join(srcdir, "META-INF/MANIFEST.MF")
@@ -380,7 +380,7 @@ def javadoc(srcdir, trgdir, packages, recursive=True):
 
 def download(url, trgdir=".", force=False):
 	file_name = url.split('/')[-1]
-	mkdirs(trgdir)
+	mkdir(trgdir)
 	target_name = os.path.join(trgdir, file_name)
 	if os.path.exists(target_name) and not force:
 		return

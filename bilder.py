@@ -9,6 +9,7 @@ import glob
 from distutils import dir_util
 from distutils import file_util
 import zipfile
+import fnmatch
 
 # evil globals
 _ = None
@@ -91,30 +92,22 @@ def rmdir(dir):
 	shutil.rmtree(dir, ignore_errors=True)
 
 
-def filelist(pathspec):
-	files = []
-	for f in glob.glob(pathspec):
-		if os.path.getsize(f) > 0:
-			files.append(f)
-	return files
+def files(pathspec):
+	"""
+	Get all files matching pathspec (nonrecursive)
+	"""
+	return [f for f in glob.glob(pathspec)]
 
-
-def files(dir, suffix=None):
+def allfiles(dir, pattern="*"):
 	"""
 	Return list<string> all files in subtree dir, optionally matching
-	a suffix like ".java"
+	a pattern spec like "*.java"
 	"""
 	dir = uniformpath(dir)
 	matching_files = []
 	for root, subFolders, files in os.walk(dir):
-		for f in files:
-			fullname = os.path.join(root, f)
-			if suffix is not None:
-				ext = os.path.splitext(fullname)[1]
-				if ext == suffix:
-					matching_files.append(fullname)
-			else:
-				matching_files.append(fullname)
+		matching = fnmatch.filter(files, pattern)
+		matching_files.extend(os.path.join(root, f) for f in matching)
 	return matching_files
 
 def copytree(src, dst, ignore=None):
@@ -147,7 +140,7 @@ def javac_targets(srcdir, trgdir):
 	srcdir = uniformpath(srcdir)
 	trgdir = uniformpath(trgdir)
 	mapping = {}
-	javafiles = files(srcdir, ".java")
+	javafiles = allfiles(srcdir, ".java")
 	classfiles = replsuffix(javafiles, ".class")
 	classfiles = [f.replace(srcdir, trgdir) for f in classfiles]  # shift to trg dir
 	for i in range(len(javafiles)):
@@ -181,7 +174,7 @@ def antlr3_targets(srcdir, trgdir, package=None):
 	else:
 		trgdir = uniformpath(trgdir)
 	mapping = {}
-	gfiles = files(srcdir, ".g")
+	gfiles = allfiles(srcdir, ".g")
 	for f in gfiles:
 		fdir, fsuffix = os.path.splitext(f)
 		gname = os.path.basename(fdir)
@@ -217,7 +210,7 @@ def antlr4_targets(srcdir, trgdir, package=None):
 	else:
 		trgdir = uniformpath(trgdir)
 	mapping = {}
-	gfiles = files(srcdir, ".g4")
+	gfiles = allfiles(srcdir, ".g4")
 	for f in gfiles:
 		fdir, fsuffix = os.path.splitext(f)
 		gname = os.path.basename(fdir)
@@ -260,21 +253,21 @@ def stale(map):  # accept map<string,string> or map<string,list<string>>
 			for t in trg:
 				# print src,"->",t
 				# print modtime(src), modtime(t)
-				if is_stale(src,t):
+				if isstale(src,t):
 					isstale = True
 					break
 		else:
 			# print src,"->",trg
 			# print modtime(src), modtime(trg)
-			if is_stale(src,trg):
+			if isstale(src,trg):
 				# print "target newer so no build"
 				isstale = True
 		if isstale:
 			out[src] = trg
 	return out
 
-def is_stale(src,trg):
-	return modtime(trg) < modtime(src);  # smaller is earlier
+def isstale(src,trg):
+	return modtime(trg) < modtime(src)  # smaller is earlier
 
 
 def require(target):
@@ -367,6 +360,7 @@ def jar(jarfile, inputfiles=".", srcdir=".", manifest=None):
 def unjar(jarfile, trgdir="."):
 	jar = zipfile.ZipFile(jarfile)
 	jar.extractall(path=trgdir)
+	jar.close()
 
 def javadoc(srcdir, trgdir, packages, recursive=True):
 	if type(packages) == type(""):
@@ -423,3 +417,17 @@ def processargs(globals):
 		target()
 	else:
 		sys.stderr.write("unknown target: %s\n" % sys.argv[1])
+
+def zip(zipfilename, srcdir): #, recursive=True):
+	"""
+	Last element of srcdir is considered root of zip'd content. E.g.,
+	srcdir="doc/Java" gives zip file with Java as the root element.
+
+	srcdir might expand to /Volumes/SSD2/Users/parrt/antlr/code/antlr4/doc/Java
+	"""
+	srcdir = uniformpath(srcdir)
+	rootdir = os.path.dirname(srcdir)		# "...doc/Java" gives doc
+	rootnameindex = len(rootdir)+1			# "...doc/Java" gives start of "Java"
+	with zipfile.ZipFile(zipfilename, mode="w", compression=zipfile.ZIP_DEFLATED) as z:
+		for f in allfiles(srcdir):
+			z.write(f, f[rootnameindex:])

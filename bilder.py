@@ -10,6 +10,8 @@ from distutils import dir_util
 from distutils import file_util
 import zipfile
 import fnmatch
+import inspect
+import string
 
 # evil globals
 _ = None
@@ -104,6 +106,8 @@ def allfiles(dir, pattern="*"):
 	a pattern spec like "*.java"
 	"""
 	dir = uniformpath(dir)
+	if not os.path.isdir(dir): # must be file
+		return [dir]
 	matching_files = []
 	for root, subFolders, files in os.walk(dir):
 		matching = fnmatch.filter(files, pattern)
@@ -114,6 +118,7 @@ def copytree(src, dst, ignore=None):
 	dir_util.copy_tree(src, dst, preserve_mode=True)
 
 def copyfile(src, dst):
+	mkdir(os.path.dirname(dst))
 	file_util.copy_file(src, dst, preserve_mode=True)
 
 def replsuffix(files, suffix):
@@ -140,8 +145,10 @@ def javac_targets(srcdir, trgdir):
 	srcdir = uniformpath(srcdir)
 	trgdir = uniformpath(trgdir)
 	mapping = {}
-	javafiles = allfiles(srcdir, ".java")
+	javafiles = allfiles(srcdir, "*.java")
 	classfiles = replsuffix(javafiles, ".class")
+	if not os.path.isdir(srcdir): # must be a Java file
+		srcdir = os.path.dirname(srcdir)
 	classfiles = [f.replace(srcdir, trgdir) for f in classfiles]  # shift to trg dir
 	for i in range(len(javafiles)):
 		mapping[javafiles[i]] = classfiles[i]
@@ -174,7 +181,7 @@ def antlr3_targets(srcdir, trgdir, package=None):
 	else:
 		trgdir = uniformpath(trgdir)
 	mapping = {}
-	gfiles = allfiles(srcdir, ".g")
+	gfiles = allfiles(srcdir, "*.g")
 	for f in gfiles:
 		fdir, fsuffix = os.path.splitext(f)
 		gname = os.path.basename(fdir)
@@ -210,7 +217,7 @@ def antlr4_targets(srcdir, trgdir, package=None):
 	else:
 		trgdir = uniformpath(trgdir)
 	mapping = {}
-	gfiles = allfiles(srcdir, ".g4")
+	gfiles = allfiles(srcdir, "*.g4")
 	for f in gfiles:
 		fdir, fsuffix = os.path.splitext(f)
 		gname = os.path.basename(fdir)
@@ -248,21 +255,21 @@ def stale(map):  # accept map<string,string> or map<string,list<string>>
 	out = {}
 	for src in map:
 		trg = map[src]
-		isstale = False
+		fstale = False
 		if type(trg) == type([]):
 			for t in trg:
 				# print src,"->",t
 				# print modtime(src), modtime(t)
 				if isstale(src,t):
-					isstale = True
+					fstale = True
 					break
 		else:
 			# print src,"->",trg
 			# print modtime(src), modtime(trg)
 			if isstale(src,trg):
 				# print "target newer so no build"
-				isstale = True
-		if isstale:
+				fstale = True
+		if fstale:
 			out[src] = trg
 	return out
 
@@ -271,12 +278,13 @@ def isstale(src,trg):
 
 
 def require(target):
-	# caller = inspect.currentframe().f_back.f_code.co_name
+	print "require", target.__name__
 	if id(target) in bild_completed:
 		return
-	print "build", target.__name__
 	bild_completed.add(id(target))
 	target()
+	caller = inspect.currentframe().f_back.f_code.co_name
+	print "build", caller
 
 
 def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
@@ -334,7 +342,7 @@ def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
 	if version is not None:
 		javac = os.path.join(jdk[version],"bin/javac")
 	cmd = [javac, "-d", trgdir, "-cp", cp] + args + tobuild
-	# print string.join(cmd, " ")
+	print string.join(cmd, " ")
 	subprocess.call(cmd)
 
 
@@ -413,7 +421,7 @@ def processargs(globals):
 	else:
 		target = globals[sys.argv[1]]
 	if target is not None:
-		print "build", target.__name__
+		print "target", target.__name__
 		target()
 	else:
 		sys.stderr.write("unknown target: %s\n" % sys.argv[1])

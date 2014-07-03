@@ -368,6 +368,16 @@ def unjar(jarfile, trgdir="."):
 	jar = zipfile.ZipFile(jarfile)
 	jar.extractall(path=trgdir)
 
+def javadoc(srcdir, trgdir, packages, recursive=True):
+	if type(packages) == type(""):
+		packages = [packages]
+	cmd = ["javadoc", "-quiet", "-d", trgdir, "-sourcepath", srcdir]
+	if recursive:
+		cmd += ["-subpackages"]
+	cmd += packages
+	print cmd
+	subprocess.call(cmd)
+
 def download(url, trgdir=".", force=False):
 	file_name = url.split('/')[-1]
 	mkdirs(trgdir)

@@ -11,7 +11,6 @@ from distutils import file_util
 import zipfile
 import fnmatch
 import inspect
-import string
 
 # evil globals
 _ = None
@@ -127,12 +126,13 @@ def replsuffix(files, suffix):
 	"""
 	outfiles = []
 	if suffix is None: return
+	if type(files) is type(""):
+		files = [files]
 	for f in files:
 		fname, ext = os.path.splitext(f)
 		newfname = fname + suffix
 		outfiles.append(newfname)
 	return outfiles
-
 
 def javac_targets(srcdir, trgdir):
 	"""
@@ -342,7 +342,7 @@ def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
 	if version is not None:
 		javac = os.path.join(jdk[version],"bin/javac")
 	cmd = [javac, "-d", trgdir, "-cp", cp] + args + tobuild
-	print string.join(cmd, " ")
+	# print string.join(cmd, " ")
 	subprocess.call(cmd)
 
 
@@ -377,7 +377,39 @@ def javadoc(srcdir, trgdir, packages, recursive=True):
 	if recursive:
 		cmd += ["-subpackages"]
 	cmd += packages
+	print cmd
 	subprocess.call(cmd)
+
+
+def load_junitjars():
+	junit_version = '4.11'
+	junit_jar = 'junit-' + junit_version + '.jar'
+	hamcrest_version = '1.3'
+	hamcrest_jar = 'hamcrest-core-' + hamcrest_version + '.jar'
+	download("http://search.maven.org/remotecontent?filepath=junit/junit/" + junit_version + "/" + junit_jar,
+			 JARCACHE)
+	download(
+		"http://search.maven.org/remotecontent?filepath=org/hamcrest/hamcrest-core/" + hamcrest_version + "/" + hamcrest_jar,
+		JARCACHE)
+	return JARCACHE+"/"+junit_jar, JARCACHE+"/"+hamcrest_jar
+
+
+def junit(srcdir, cp=None):
+	hamcrest_jar, junit_jar = load_junitjars()
+	srcdir = uniformpath(srcdir)
+	testfiles = allfiles(srcdir, "*.class")
+	testfiles = [f[len(srcdir)+1:] for f in testfiles]
+	testclasses = replsuffix(testfiles, '')
+	testclasses = [c for c in testclasses if os.path.basename(c).startswith("Test") and '$' not in os.path.basename(c)]
+	testclasses = [c.replace('/','.') for c in testclasses]
+	cp_ = srcdir+os.pathsep+junit_jar+os.pathsep+hamcrest_jar
+	if cp is not None:
+		cp_ = cp+os.pathsep+cp_
+	for c in testclasses:
+		cmd = ['java', '-cp', cp_, 'org.junit.runner.JUnitCore', c]
+		print "testing", c
+		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		stdout,stderr = p.communicate() # hush output
 
 def dot(src, trgdir=".", format="pdf"):
 	if not src.endswith(".dot"):
@@ -395,25 +427,13 @@ def download(url, trgdir=".", force=False):
 		return
 	try:
 		response = urllib2.urlopen(url)
-	except urllib2.HTTPError:
-		sys.stderr.write("can't download %s\n" % url)
+	except urllib2.HTTPError, e:
+		sys.stderr.write("can't download %s: %s\n" % (url,str(e)))
 	else:
 		output = open(target_name, 'wb')
 		output.write(response.read())
 		output.close()
 
-
-"""
-def function(name):
-	def afunc():
-		pass
-
-	for f in globals().values():
-		if type(f) == type(afunc): print f.__name__
-		if type(f) == type(afunc) and f.__name__ == name:
-			return f
-	return None
-"""
 
 def processargs(globals):
 	if len(sys.argv) == 1:

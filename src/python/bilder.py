@@ -395,7 +395,7 @@ def load_junitjars():
 	return JARCACHE+"/"+junit_jar, JARCACHE+"/"+hamcrest_jar
 
 
-def junit(srcdir, cp=None):
+def junit(srcdir, cp=None, verbose=False):
 	hamcrest_jar, junit_jar = load_junitjars()
 	download("https://github.com/parrt/bild/raw/master/lib/bild-junit.jar", JARCACHE)
 	srcdir = uniformpath(srcdir)
@@ -404,12 +404,13 @@ def junit(srcdir, cp=None):
 	testclasses = replsuffix(testfiles, '')
 	testclasses = [c for c in testclasses if os.path.basename(c).startswith("Test") and '$' not in os.path.basename(c)]
 	testclasses = [c.replace('/','.') for c in testclasses]
-	cp_ = srcdir+os.pathsep+junit_jar+os.pathsep+hamcrest_jar+os.pathsep+JARCACHE+"/bild-junit.jar"
+	cp_ = '/Users/parrt/github/bild/lib/bild-junit.jar:'+srcdir+os.pathsep+junit_jar+os.pathsep+hamcrest_jar+os.pathsep+JARCACHE+"/bild-junit.jar"
 	if cp is not None:
 		cp_ = cp+os.pathsep+cp_
-	for c in ['org.antlr.v4.test.TestActionTranslation']: #testclasses:
-		cmd = ['java', '-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
-		print string.join(cmd, " ")
+	for c in testclasses:
+		cmd = ['java', '-cp', cp_, 'org.bild.JUnitLauncher', c]
+		if verbose:
+			cmd = ['java', '-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
 		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		stdout,stderr = p.communicate() # hush output
 		print stdout

@@ -30,32 +30,37 @@ public class JUnitLauncher {
 				@Override
 				public void testRunFinished(Result result) throws Exception {
 					super.testRunFinished(result);
-					System.out.println("finished "+result);
-					System.out.println(stdout);
 				}
 			}
 		);
 		PrintStream stderr__ = System.err;
 		PrintStream stdout__ = System.out;
-		System.setOut(new PrintStream(stdout));
-		System.setErr(new PrintStream(stderr));
+		PrintStream out = new PrintStream(stdout);
+		System.setOut(out);
+		PrintStream err = new PrintStream(stderr);
+		System.setErr(err);
 		Result results;
 		try {
 			results = junit.run(Class.forName(className));
-			if ( verbose ) {
-				System.out.println(stdout);
-				System.err.println(stderr);
-			}
 		}
 		finally {
+			out.flush();
+			err.flush();
 			System.setOut(stdout__);
 			System.setErr(stderr__);
+		}
+		if ( verbose ) {
+			System.out.println(stdout);
+			System.err.println(stderr);
 		}
 		System.out.println(className+": "+results.getRunCount()+" tests, "+results.getFailureCount()+" failures");
 		if ( results.getFailures()!=null ) {
 			for (Failure f:results.getFailures()) {
 				String methodName = "\t"+f.getTestHeader().replaceAll("\\(.*?\\)", "()");
 				System.out.println(methodName+": "+f.getMessage());
+				if ( verbose ) {
+					System.out.println(f.getTrace());
+				}
 			}
 		}
 	}

@@ -403,7 +403,7 @@ def junit(srcdir, cp=None, verbose=False):
 	testclasses = replsuffix(testfiles, '')
 	testclasses = [c for c in testclasses if os.path.basename(c).startswith("Test") and '$' not in os.path.basename(c)]
 	testclasses = [c.replace('/','.') for c in testclasses]
-	cp_ = '/Users/parrt/github/bild/lib/bild-junit.jar:'+srcdir+os.pathsep+junit_jar+os.pathsep+hamcrest_jar+os.pathsep+JARCACHE+"/bild-junit.jar"
+	cp_ = srcdir+os.pathsep+junit_jar+os.pathsep+hamcrest_jar+os.pathsep+JARCACHE+"/bild-junit.jar"
 	if cp is not None:
 		cp_ = cp+os.pathsep+cp_
 	for c in testclasses:

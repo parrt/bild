@@ -11,7 +11,6 @@ from distutils import file_util
 import zipfile
 import fnmatch
 import inspect
-import string
 
 # evil globals
 _ = None
@@ -413,7 +412,7 @@ def junit(srcdir, cp=None, verbose=False):
 			cmd = ['java', '-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
 		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		stdout,stderr = p.communicate() # hush output
-		print stdout
+		print stdout,
 
 def dot(src, trgdir=".", format="pdf"):
 	if not src.endswith(".dot"):

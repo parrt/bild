@@ -410,6 +410,9 @@ def junit(srcdir, cp=None):
 		print "testing", c
 		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		stdout,stderr = p.communicate() # hush output
+		m = re.match(r"OK \(\d+ tests\)", stdout)
+		print m
+		print m.group(0)
 
 def dot(src, trgdir=".", format="pdf"):
 	if not src.endswith(".dot"):

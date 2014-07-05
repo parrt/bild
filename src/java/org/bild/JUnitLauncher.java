@@ -22,18 +22,19 @@ public class JUnitLauncher {
 			}
 			className = args[1];
 		}
+		final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+		final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 		JUnitCore junit = new JUnitCore();
 		junit.addListener(
 			new RunListener() {
 				@Override
 				public void testRunFinished(Result result) throws Exception {
 					super.testRunFinished(result);
-//					System.out.println("finished "+result);
+					System.out.println("finished "+result);
+					System.out.println(stdout);
 				}
 			}
 		);
-		ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-		ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 		PrintStream stderr__ = System.err;
 		PrintStream stdout__ = System.out;
 		System.setOut(new PrintStream(stdout));

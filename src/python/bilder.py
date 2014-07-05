@@ -396,6 +396,7 @@ def load_junitjars():
 
 def junit(srcdir, cp=None):
 	hamcrest_jar, junit_jar = load_junitjars()
+	download("", JARCACHE)
 	srcdir = uniformpath(srcdir)
 	testfiles = allfiles(srcdir, "*.class")
 	testfiles = [f[len(srcdir)+1:] for f in testfiles]
@@ -406,13 +407,11 @@ def junit(srcdir, cp=None):
 	if cp is not None:
 		cp_ = cp+os.pathsep+cp_
 	for c in testclasses:
-		cmd = ['java', '-cp', cp_, 'org.junit.runner.JUnitCore', c]
+		cmd = ['java', '-cp', cp_, 'org.bild.JUnitLauncher', c]
 		print "testing", c
 		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		stdout,stderr = p.communicate() # hush output
-		m = re.match(r"OK \(\d+ tests\)", stdout)
-		print m
-		print m.group(0)
+		print stdout
 
 def dot(src, trgdir=".", format="pdf"):
 	if not src.endswith(".dot"):

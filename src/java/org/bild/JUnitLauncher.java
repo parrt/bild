@@ -13,7 +13,15 @@ public class JUnitLauncher {
 		if ( args.length<1 ) {
 			return;
 		}
+		boolean verbose = false;
 		String className = args[0];
+		if ( args[0].equals("-verbose") ) {
+			verbose = true;
+			if ( args.length<2 ) {
+				return;
+			}
+			className = args[1];
+		}
 		JUnitCore junit = new JUnitCore();
 		junit.addListener(
 			new RunListener() {
@@ -33,6 +41,10 @@ public class JUnitLauncher {
 		Result results;
 		try {
 			results = junit.run(Class.forName(className));
+			if ( verbose ) {
+				System.out.println(stdout);
+				System.err.println(stderr);
+			}
 		}
 		finally {
 			System.setOut(stdout__);

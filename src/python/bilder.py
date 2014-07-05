@@ -11,6 +11,7 @@ from distutils import file_util
 import zipfile
 import fnmatch
 import inspect
+import string
 
 # evil globals
 _ = None
@@ -396,19 +397,19 @@ def load_junitjars():
 
 def junit(srcdir, cp=None):
 	hamcrest_jar, junit_jar = load_junitjars()
-	download("", JARCACHE)
+	download("https://github.com/parrt/bild/raw/master/lib/bild-junit.jar", JARCACHE)
 	srcdir = uniformpath(srcdir)
 	testfiles = allfiles(srcdir, "*.class")
 	testfiles = [f[len(srcdir)+1:] for f in testfiles]
 	testclasses = replsuffix(testfiles, '')
 	testclasses = [c for c in testclasses if os.path.basename(c).startswith("Test") and '$' not in os.path.basename(c)]
 	testclasses = [c.replace('/','.') for c in testclasses]
-	cp_ = srcdir+os.pathsep+junit_jar+os.pathsep+hamcrest_jar
+	cp_ = srcdir+os.pathsep+junit_jar+os.pathsep+hamcrest_jar+os.pathsep+JARCACHE+"/bild-junit.jar"
 	if cp is not None:
 		cp_ = cp+os.pathsep+cp_
-	for c in testclasses:
-		cmd = ['java', '-cp', cp_, 'org.bild.JUnitLauncher', c]
-		print "testing", c
+	for c in ['org.antlr.v4.test.TestActionTranslation']: #testclasses:
+		cmd = ['java', '-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
+		print string.join(cmd, " ")
 		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		stdout,stderr = p.communicate() # hush output
 		print stdout

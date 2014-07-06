@@ -115,6 +115,9 @@ def allfiles(dir, pattern="*"):
 	return matching_files
 
 def copytree(src, dst, ignore=None):
+	if os.path.exists(dst) and not os.path.isdir(dst):
+		os.remove(dst) # can't copy onto a file
+	mkdir(dst)
 	dir_util.copy_tree(src, dst, preserve_mode=True)
 
 def copyfile(src, dst):

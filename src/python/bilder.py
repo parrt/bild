@@ -11,6 +11,7 @@ from distutils import file_util
 import zipfile
 import fnmatch
 import inspect
+import time
 
 # evil globals
 _ = None
@@ -394,7 +395,7 @@ def load_junitjars():
 	return JARCACHE+"/"+junit_jar, JARCACHE+"/"+hamcrest_jar
 
 
-def junit(srcdir, cp=None, verbose=False):
+def junit(srcdir, cp=None, verbose=False, args=[]):
 	hamcrest_jar, junit_jar = load_junitjars()
 	download("https://github.com/parrt/bild/raw/master/lib/bild-junit.jar", JARCACHE)
 	srcdir = uniformpath(srcdir)
@@ -406,13 +407,25 @@ def junit(srcdir, cp=None, verbose=False):
 	cp_ = srcdir+os.pathsep+junit_jar+os.pathsep+hamcrest_jar+os.pathsep+JARCACHE+"/bild-junit.jar"
 	if cp is not None:
 		cp_ = cp+os.pathsep+cp_
+	processes = []
+	# launch all tests in srcdir in parallel
 	for c in testclasses:
-		cmd = ['java', '-cp', cp_, 'org.bild.JUnitLauncher', c]
+		cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', c]
 		if verbose:
-			cmd = ['java', '-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
+			cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
+		#print string.join(cmd, ' ')
 		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		stdout,stderr = p.communicate() # hush output
-		print stdout,
+		processes.append(p)
+	# busy wait with sleep for any results
+	while len(processes)>0:
+		for p in processes:
+			r = p.poll()
+			if r is not None: # p is done
+				processes.remove(p)
+				stdout,stderr = p.communicate() # hush output
+				print stdout,
+		time.sleep(0.200)
+	print "Tests complete"
 
 def dot(src, trgdir=".", format="pdf"):
 	if not src.endswith(".dot"):

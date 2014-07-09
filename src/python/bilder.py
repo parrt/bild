@@ -320,6 +320,9 @@ def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
     # print cmd
     subprocess.call(cmd)
 
+def python(filename, args=[]):
+	cmd = ["python", filename] + args
+	subprocess.call(cmd)
 
 def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
     map = antlr4_targets(srcdir, trgdir, package)

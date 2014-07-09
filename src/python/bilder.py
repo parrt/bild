@@ -321,6 +321,8 @@ def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
     subprocess.call(cmd)
 
 def python(filename, args=[]):
+	if type(args) is not type([]):
+		args = [args]
 	cmd = ["python", filename] + args
 	subprocess.call(cmd)
 

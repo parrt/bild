@@ -121,16 +121,16 @@ def allfiles(dir, pattern="*"):
     return matching_files
 
 
-def copytree(src, dst, ignore=None):
-    if os.path.exists(dst) and not os.path.isdir(dst):
-        os.remove(dst)  # can't copy onto a file
-    mkdir(dst)
-    dir_util.copy_tree(src, dst, preserve_mode=True)
+def copytree(src, trg, ignore=None):
+    if os.path.exists(trg) and not os.path.isdir(trg):
+        os.remove(trg)  # can't copy onto a file
+    mkdir(trg)
+    dir_util.copy_tree(src, trg, preserve_mode=True)
 
 
-def copyfile(src, dst):
-    mkdir(os.path.dirname(dst))
-    file_util.copy_file(src, dst, preserve_mode=True)
+def copyfile(src, trg):
+    mkdir(os.path.dirname(trg))
+    file_util.copy_file(src, trg, preserve_mode=True)
 
 
 def replsuffix(files, suffix):

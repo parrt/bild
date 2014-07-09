@@ -129,8 +129,11 @@ def copytree(src, trg, ignore=None):
 
 
 def copyfile(src, trg):
-    mkdir(os.path.dirname(trg))
-    file_util.copy_file(src, trg, preserve_mode=True)
+	if not os.path.exists(trg):
+		trg_dirname = os.path.dirname(trg)
+		if len(trg_dirname.strip()) > 0:
+			mkdir(trg_dirname)
+	file_util.copy_file(src, trg, preserve_mode=True)
 
 
 def replsuffix(files, suffix):
@@ -320,12 +323,6 @@ def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
     # print cmd
     subprocess.call(cmd)
 
-def python(filename, args=[]):
-	if type(args) is not type([]):
-		args = [args]
-	cmd = ["python", filename] + args
-	subprocess.call(cmd)
-
 def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
     map = antlr4_targets(srcdir, trgdir, package)
     tobuild = stale(map).keys()
@@ -495,13 +492,25 @@ def zip(zipfilename, srcdir):  #, recursive=True):
             z.write(f, f[rootnameindex:])
 
 
+def python(filename, workingdir=".", args=[]):
+	savedcwd = os.getcwd()
+	os.chdir(workingdir)
+	try:
+		if type(args) is not type([]):
+			args = [args]
+		cmd = [sys.executable, filename] + args
+		subprocess.call(cmd)
+	finally:
+		os.chdir(savedcwd)
+
+
 def processargs(globals):
-    if len(sys.argv) == 1:
-        target = globals["all"]
-    else:
-        target = globals[sys.argv[1]]
-    if target is not None:
-        print "target", target.__name__
-        target()
-    else:
-        sys.stderr.write("unknown target: %s\n" % sys.argv[1])
+	if len(sys.argv) == 1:
+		target = globals["all"]
+	else:
+		target = globals[sys.argv[1]]
+	if target is not None:
+		print "target", target.__name__
+		target()
+	else:
+		sys.stderr.write("unknown target: %s\n" % sys.argv[1])

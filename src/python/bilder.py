@@ -306,6 +306,8 @@ def require(target):
 
 
 def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
+    srcdir = uniformpath(srcdir)
+    trgdir = uniformpath(trgdir)
     map = antlr3_targets(srcdir, trgdir, package)
     tobuild = stale(map).keys()
     if len(tobuild) == 0:
@@ -324,6 +326,8 @@ def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
     subprocess.call(cmd)
 
 def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
+    srcdir = uniformpath(srcdir)
+    trgdir = uniformpath(trgdir)
     map = antlr4_targets(srcdir, trgdir, package)
     tobuild = stale(map).keys()
     if len(tobuild) == 0:

@@ -12,7 +12,6 @@ import zipfile
 import fnmatch
 import inspect
 import time
-import string
 
 # evil globals
 _ = None
@@ -73,7 +72,7 @@ def findjdks():
 
 
 jdk = findjdks()
-print sys.platform + " java =", jdk
+#print sys.platform + " java =", jdk
 
 
 def modtime(fname):

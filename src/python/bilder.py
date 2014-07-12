@@ -68,6 +68,7 @@ def findjdks():
 
 
 jdk = findjdks()
+print sys.platform+" java =",jdk
 
 
 def modtime(fname):

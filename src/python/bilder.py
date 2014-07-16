@@ -76,9 +76,7 @@ jdk = findjdks()
 
 todo = """
 def chkjava(version):
-	"""
-	Version in {1.6,1.7,1.8}
-	"""
+	#Version in {1.6,1.7,1.8}
 	javahome = 'JAVA' + version
 	if os.environ.get(javahome):
 		jdk[version] = os.environ[javahome]

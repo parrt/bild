@@ -403,7 +403,9 @@ def unjar(jarfile, trgdir="."):
 def javadoc(srcdir, trgdir, packages, recursive=True):
 	if type(packages) == type(""):
 		packages = [packages]
-	cmd = ["javadoc", "-quiet", "-d", trgdir, "-sourcepath", srcdir]
+	if type(srcdir) == type(""):
+		srcdir = [srcdir]
+	cmd = ["javadoc", "-quiet", "-d", trgdir, "-sourcepath", os.pathsep.join(srcdir)]
 	if recursive:
 		cmd += ["-subpackages"]
 	cmd += packages

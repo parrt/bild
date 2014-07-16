@@ -420,16 +420,21 @@ def unjar(jarfile, trgdir="."):
 	jar.close()
 
 
-def javadoc(srcdir, trgdir, packages, recursive=True):
+def javadoc(srcdir, trgdir, packages, classpath=None, recursive=True):
 	if type(packages) == type(""):
 		packages = [packages]
 	if type(srcdir) == type(""):
 		srcdir = [srcdir]
-	cmd = ["javadoc", "-quiet", "-d", trgdir, "-sourcepath", os.pathsep.join(srcdir)]
+	if not classpath:
+		classpath = srcdir
+	if type(classpath) == type(""):
+		classpath = [classpath]
+	cmd = ["javadoc", "-quiet", "-d", trgdir, "-sourcepath", os.pathsep.join(srcdir),
+		   "-classpath", os.pathsep.join(classpath)]
 	if recursive:
 		cmd += ["-subpackages"]
 	cmd += packages
-	#print cmd
+	# print ' '.join(cmd)
 	subprocess.call(cmd)
 
 

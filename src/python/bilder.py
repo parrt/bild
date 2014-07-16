@@ -74,6 +74,28 @@ def findjdks():
 jdk = findjdks()
 #print sys.platform + " java =", jdk
 
+todo = """
+def chkjava(version):
+	"""
+	Version in {1.6,1.7,1.8}
+	"""
+	javahome = 'JAVA' + version
+	if os.environ.get(javahome):
+		jdk[version] = os.environ[javahome]
+		print "Setting java to "+jdk[version]+""
+	else:
+		jdk = findjdks()
+		if version in jdk:
+			print javahome+" not set, using "+jdk[version]
+		else:
+			p = subprocess.Popen(["java", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			out,err = p.communicate()
+			# java version "1.7.0_65"
+			vline = err.split("\n")[0]
+			vquote = vline.split(" ")[2]
+			v = vquote.replace('"',"")
+			print javahome+" not set, using system default: "+v
+"""
 
 def modtime(fname):
 	try:

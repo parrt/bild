@@ -429,7 +429,7 @@ def javadoc(srcdir, trgdir, packages, recursive=True):
 	if recursive:
 		cmd += ["-subpackages"]
 	cmd += packages
-	print cmd
+	#print cmd
 	subprocess.call(cmd)
 
 

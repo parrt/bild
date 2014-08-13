@@ -456,7 +456,7 @@ def junit(srcdir, cp=None, verbose=False, args=[]):
 	hamcrest_jar, junit_jar = load_junitjars()
 	download("https://github.com/parrt/bild/raw/master/lib/bild-junit.jar", JARCACHE)
 	srcdir = uniformpath(srcdir)
-	testfiles = allfiles(srcdir, "*.class")
+	testfiles = allfiles(srcdir, "*.java")
 	testfiles = [f[len(srcdir) + 1:] for f in testfiles]
 	testclasses = replsuffix(testfiles, '')
 	testclasses = [c for c in testclasses if os.path.basename(c).startswith("Test") and '$' not in os.path.basename(c)]

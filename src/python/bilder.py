@@ -470,7 +470,7 @@ def junit(srcdir, cp=None, verbose=False, args=[]):
 		cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', c]
 		if verbose:
 			cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
-		# print string.join(cmd, ' ')
+		# print ' '.join(cmd)
 		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		processes.append(p)
 	# busy wait with sleep for any results

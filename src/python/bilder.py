@@ -566,8 +566,8 @@ def processargs(globals):
 		print "target", target.__name__
 		try:
 			target()
-		except:
-			pass
+                except Exception as e:
+                        print e
 		if ERRORS>0 : print "bild failed"; sys.exit(1)
 		else: print "bild succeeded"; sys.exit(0)
 	else:

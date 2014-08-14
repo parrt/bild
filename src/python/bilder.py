@@ -12,6 +12,7 @@ import zipfile
 import fnmatch
 import inspect
 import time
+import string
 
 # evil globals
 _ = None

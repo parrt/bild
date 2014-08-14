@@ -18,6 +18,7 @@ _ = None
 bild_completed = set()  # which *targets* have been built.
 BILD = os.path.expanduser("~/.bild")
 JARCACHE = os.path.join(BILD, "jars")
+ERRORS=0  # increment this when error found so we can set exit value
 # CLASSPATH = JARCACHE + "/*" + os.pathsep + os.environ['CLASSPATH']
 
 def findjdks_win():
@@ -322,13 +323,18 @@ def isstale(src, trg):
 
 
 def require(target):
+	global ERRORS
 	print "require", target.__name__
 	if id(target) in bild_completed:
 		return
 	bild_completed.add(id(target))
 	target()
 	caller = inspect.currentframe().f_back.f_code.co_name
-	print "build", caller
+	if ERRORS==0:
+		print "build", caller
+	else:
+		print "skipping", caller
+		raise Exception
 
 
 def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
@@ -375,6 +381,7 @@ def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
 
 
 def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
+	global ERRORS
 	srcdir = uniformpath(srcdir)
 	trgdir = uniformpath(trgdir)
 	mkdir(trgdir)
@@ -391,7 +398,8 @@ def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
 		javac = os.path.join(jdk[version], "bin/javac")
 	cmd = [javac, "-d", trgdir, "-cp", cp] + args + tobuild
 	# print string.join(cmd, " ")
-	subprocess.call(cmd)
+	exitcode = subprocess.call(cmd)
+	if exitcode!=0: ERRORS += 1
 
 
 def jar(jarfile, inputfiles=".", srcdir=".", manifest=None):
@@ -453,6 +461,7 @@ def load_junitjars():
 
 
 def junit(srcdir, cp=None, verbose=False, args=[]):
+	global ERRORS
 	hamcrest_jar, junit_jar = load_junitjars()
 	download("https://github.com/parrt/bild/raw/master/lib/bild-junit.jar", JARCACHE)
 	srcdir = uniformpath(srcdir)
@@ -481,6 +490,9 @@ def junit(srcdir, cp=None, verbose=False, args=[]):
 				processes.remove(p)
 				stdout, stderr = p.communicate()  # hush output
 				print stdout,
+				summary = stdout.split('\n')[0]
+				if "0 failures" not in summary:
+					ERRORS += 1
 		time.sleep(0.200)
 	print "Tests complete"
 
@@ -544,12 +556,18 @@ def python(filename, workingdir=".", args=[]):
 
 
 def processargs(globals):
+	global ERRORS
 	if len(sys.argv) == 1:
 		target = globals["all"]
 	else:
 		target = globals[sys.argv[1]]
 	if target is not None:
 		print "target", target.__name__
-		target()
+		try:
+			target()
+		except:
+			pass
+		if ERRORS>0 : print "bild failed"; sys.exit(1)
+		else: print "bild succeeded"; sys.exit(0)
 	else:
 		sys.stderr.write("unknown target: %s\n" % sys.argv[1])

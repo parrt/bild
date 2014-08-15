@@ -497,6 +497,39 @@ def junit(srcdir, cp=None, verbose=False, args=[]):
 		time.sleep(0.200)
 	print "Tests complete"
 
+def junit_runner(testclasses, cp=None, verbose=False, args=[]):
+	global ERRORS
+	if type(testclasses) == type(""):
+			testclasses = [testclasses]
+	hamcrest_jar, junit_jar = load_junitjars()
+	download("https://github.com/parrt/bild/raw/master/lib/bild-junit.jar", JARCACHE)
+	testclasses = [c.replace('/', '.') for c in testclasses]
+	cp_ = os.pathsep + junit_jar + os.pathsep + hamcrest_jar + os.pathsep + JARCACHE +\
+		  "/bild-junit.jar"
+	if cp is not None:
+		cp_ = cp + os.pathsep + cp_
+	processes = []
+	# launch all tests in srcdir in parallel
+	for c in testclasses:
+		cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', c]
+		if verbose:
+			cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
+		# print ' '.join(cmd)
+		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		processes.append(p)
+	# busy wait with sleep for any results
+	while len(processes) > 0:
+		for p in processes:
+			r = p.poll()
+			if r is not None:  # p is done
+				processes.remove(p)
+				stdout, stderr = p.communicate()  # hush output
+				print stdout,
+				summary = stdout.split('\n')[0]
+				if "0 failures" not in summary:
+					ERRORS += 1
+		time.sleep(0.200)
+	print "Tests complete"
 
 def dot(src, trgdir=".", format="pdf"):
 	if not src.endswith(".dot"):

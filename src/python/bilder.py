@@ -555,7 +555,7 @@ def download(url, trgdir=".", force=False):
 		output.write(response.read())
 		output.close()
 
-def wget(url, level=None, trgdir=None, proxy=None):
+def wget(url, level=None, trgdir=None, proxy=None, verbose=False):
 	"""
 	$ http_proxy=http://localhost:8080
 	$ wget -P foo --proxy=on -r --level 1 http://www.cs.usfca.edu/index.html
@@ -564,6 +564,8 @@ def wget(url, level=None, trgdir=None, proxy=None):
 	"""
 	global ERRORS
 	cmd = ["wget", "-r"]
+	if not verbose:
+		cmd += ["-q"]
 	if trgdir is not None:
 		cmd += ["-P", trgdir]
 	env = os.environ.copy()
@@ -573,13 +575,25 @@ def wget(url, level=None, trgdir=None, proxy=None):
 	if level is not None:
 		cmd += ["--level", str(level)]
 	cmd += [url]
-	print ', '.join(cmd)
+	# print ', '.join(cmd)
 	p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	out,err = p.communicate()
-	print out
-	print err
+	#print out
+	if err is not None and len(err)>0:
+		print "wget errors:"
+		print err
 	if p.returncode!=0: ERRORS += 1
 	return p.returncode
+
+def diff(file1, file2, recursive=False):
+	global ERRORS
+	cmd = ["diff"]
+	if recursive:
+		cmd += ["-r"]
+	cmd += [file1, file2]
+	#print ', '.join(cmd)
+	output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+	return output
 
 def scp(src, user, machine, trg):
 	subprocess.check_call(

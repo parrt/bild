@@ -563,7 +563,7 @@ def wget(url, level=None, trgdir=None, proxy=None, verbose=False):
 	wget("http://www.cs.usfca.edu/index.html", trgdir="foo", proxy="http://localhost:8080")
 	"""
 	global ERRORS
-	cmd = ["wget", "-r"]
+	cmd = ["wget", "-r", "--wait=0", "--keep-session-cookies"]
 	if not verbose:
 		cmd += ["-q"]
 	if trgdir is not None:

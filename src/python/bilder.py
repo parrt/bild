@@ -555,12 +555,36 @@ def download(url, trgdir=".", force=False):
 		output.write(response.read())
 		output.close()
 
+def wget(url, level=None, trgdir=None, proxy=None):
+	"""
+	$ http_proxy=http://localhost:8080
+	$ wget -P foo --proxy=on -r --level 1 http://www.cs.usfca.edu/index.html
+	wget("http://www.cs.usfca.edu/index.html", trgdir="foo")
+	wget("http://www.cs.usfca.edu/index.html", trgdir="foo", proxy="http://localhost:8080")
+	"""
+	global ERRORS
+	cmd = ["wget", "-r"]
+	if trgdir is not None:
+		cmd += ["-P", trgdir]
+	env = os.environ.copy()
+	if proxy is not None:
+		env["http_proxy"] = proxy
+		cmd += ["--proxy=on"]
+	if level is not None:
+		cmd += ["--level", str(level)]
+	cmd += [url]
+	print ', '.join(cmd)
+	p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	out,err = p.communicate()
+	print out
+	print err
+	if p.returncode!=0: ERRORS += 1
+	return p.returncode
 
 def scp(src, user, machine, trg):
 	subprocess.check_call(
 		["scp", src, "%s@%s:%s" % (user, machine, trg)]
 	)
-
 
 def zip(zipfilename, srcdir):  # , recursive=True):
 	"""

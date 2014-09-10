@@ -381,6 +381,24 @@ def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
 	subprocess.call(cmd)
 
 
+def java(classname, cp=None, version=None, vmargs=[], progargs=[], background=False):
+	global ERRORS
+	if cp is None:
+		cp = JARCACHE + "/*"
+	j = "java"
+	if version is not None:
+		j = os.path.join(jdk[version], "bin/java")
+	cmd = [j, "-cp", cp] + vmargs + progargs + [classname]
+	print ' '.join(cmd)
+	if background:
+		# background cannot set bild errors
+		p = subprocess.Popen(cmd)
+		return p.pid
+	else:
+		exitcode = subprocess.call(cmd)
+		if exitcode!=0: ERRORS += 1
+
+
 def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
 	global ERRORS
 	srcdir = uniformpath(srcdir)
@@ -567,6 +585,7 @@ def wget(url, level=None, trgdir=None, proxy=None, verbose=False):
 	if not verbose:
 		cmd += ["-q"]
 	if trgdir is not None:
+		mkdir(trgdir)
 		cmd += ["-P", trgdir]
 	env = os.environ.copy()
 	if proxy is not None:

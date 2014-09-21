@@ -588,9 +588,11 @@ def wget(url, level=None, trgdir=None, proxy=None, verbose=False):
 		mkdir(trgdir)
 		cmd += ["-P", trgdir]
 	env = os.environ.copy()
-	if proxy is not None:
-		env["http_proxy"] = proxy
-		cmd += ["--proxy=on"]
+        if proxy is None:
+                cmd += ["--proxy=off"]
+        else:
+                env["http_proxy"] = proxy
+                cmd += ["--proxy=on"]
 	if level is not None:
 		cmd += ["--level", str(level)]
 	cmd += [url]

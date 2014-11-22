@@ -148,6 +148,15 @@ def allfiles(dir, pattern="*"):
         matching_files.extend(os.path.join(root, f) for f in matching)
     return matching_files
 
+def skipfiles(tomatch, skips):
+    matched = tomatch
+    for skip in skips:
+        matched = []
+        for file in tomatch:
+            if file.find(skip)<0:
+               matched.append(file)
+        tomatch = matched
+    return matched
 
 def copytree(src, trg, ignore=None):
     if os.path.exists(trg) and not os.path.isdir(trg):
@@ -179,7 +188,7 @@ def replsuffix(files, suffix):
     return outfiles
 
 
-def javac_targets(srcdir, trgdir):
+def javac_targets(srcdir, trgdir, skip=[]):
     """
     Return a map<string,string> of files javac would create given a subdir of java
     files and a target dir. E.g.,
@@ -191,6 +200,7 @@ def javac_targets(srcdir, trgdir):
     trgdir = uniformpath(trgdir)
     mapping = {}
     javafiles = allfiles(srcdir, "*.java")
+    javafiles = skipfiles(javafiles, skip)
     classfiles = replsuffix(javafiles, ".class")
     if not os.path.isdir(srcdir):  # must be a Java file
         srcdir = os.path.dirname(srcdir)
@@ -396,15 +406,16 @@ def java(classname, cp=None, version=None, vmargs=[], progargs=[], background=Fa
         return p.pid
     else:
         exitcode = subprocess.call(cmd)
-        if exitcode!=0: ERRORS += 1
+        if exitcode!=0:
+            ERRORS += 1
 
 
-def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
+def javac(srcdir, trgdir=".", cp=None, version=None, args=[], skip=[]):
     global ERRORS
     srcdir = uniformpath(srcdir)
     trgdir = uniformpath(trgdir)
     mkdir(trgdir)
-    map = javac_targets(srcdir, trgdir)
+    map = javac_targets(srcdir, trgdir, skip)
     tobuild = stale(map).keys()
     # print "build",stale(map)
     if len(tobuild) == 0:
@@ -418,7 +429,8 @@ def javac(srcdir, trgdir=".", cp=None, version=None, args=[]):
     cmd = [javac, "-d", trgdir, "-cp", cp] + args + tobuild
     # print string.join(cmd, " ")
     exitcode = subprocess.call(cmd)
-    if exitcode!=0: ERRORS += 1
+    if exitcode!=0:
+        ERRORS += 1
 
 
 def jar(jarfile, inputfiles=".", srcdir=".", manifest=None):
@@ -433,11 +445,12 @@ def jar(jarfile, inputfiles=".", srcdir=".", manifest=None):
         contents_with_C.append(f)
     # write manifest
     metadir = os.path.join(srcdir, "META-INF")
+    rmdir(metadir)
     mkdir(metadir)
     with open(os.path.join(metadir, "MANIFEST.MF"), "w") as mf:
         mf.write(manifest)
-    mfile = os.path.join(srcdir, "META-INF/MANIFEST.MF")
-    cmd = ["jar", "cmf", mfile, jarfile] + contents_with_C
+    manifest = os.path.join(metadir, "MANIFEST.MF")
+    cmd = ["jar", "cmf", manifest, jarfile] + contents_with_C
     subprocess.call(cmd)
 
 
@@ -491,9 +504,10 @@ def junit(srcdir, cp=None, verbose=False, args=[]):
     processes = []
     # launch all tests in srcdir in parallel
     for c in testclasses:
-        cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', c]
         if verbose:
             cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
+        else:
+            cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', c]
         # print ' '.join(cmd)
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         processes.append(p)
@@ -509,7 +523,6 @@ def junit(srcdir, cp=None, verbose=False, args=[]):
                 if "0 failures" not in summary:
                     ERRORS += 1
         time.sleep(0.200)
-    print "Tests complete"
 
 def junit_runner(testclasses, cp=None, verbose=False, args=[]):
     global ERRORS

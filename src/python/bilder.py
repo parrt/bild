@@ -16,11 +16,28 @@ import string
 
 # evil globals
 _ = None
+BILD_LOG_DIR = "."      # where to generate bild.log
+logfile = None
 bild_completed = set()  # which *targets* have been built.
 BILD = os.path.expanduser("~/.bild")
 JARCACHE = os.path.join(BILD, "jars")
 ERRORS=0  # increment this when error found so we can set exit value
 # CLASSPATH = JARCACHE + "/*" + os.pathsep + os.environ['CLASSPATH']
+
+def log(msg):
+    global logfile
+    if logfile==None:
+        logfile = open(BILD_LOG_DIR+"/bild.log", "w") # assume this closes upon Python exit
+    if msg is None:
+        return
+    caller = inspect.currentframe().f_back.f_code.co_name
+    if caller!="require":
+        line = inspect.currentframe().f_back.f_lineno
+        # print "LOGGING %s line %d: %s" % (caller,line,msg)
+        logfile.write("%s line %d: %s\n" % (caller,line,msg))
+    else:
+        logfile.write("%s\n" % msg)
+
 
 def findjdks_win():
     return {}
@@ -74,7 +91,8 @@ def findjdks():
 
 
 jdk = findjdks()
-#print sys.platform + " java =", jdk
+log("platform="+sys.platform)
+log("jdk="+str(jdk))
 
 todo = """
 def chkjava(version):
@@ -336,6 +354,7 @@ def isstale(src, trg):
 def require(target):
     global ERRORS
     print "require", target.__name__
+    log("require "+target.__name__)
     if id(target) in bild_completed:
         return
     bild_completed.add(id(target))
@@ -343,9 +362,11 @@ def require(target):
     caller = inspect.currentframe().f_back.f_code.co_name
     if ERRORS==0:
         print "build", caller
+        log("build "+caller)
     else:
         print "skipping", caller
-        raise Exception
+        log("error building "+caller)
+        raise Exception()
 
 
 def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
@@ -365,8 +386,7 @@ def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
                "-o", os.path.join(trgdir, packageAsDir)] + args + tobuild
     else:
         cmd = ["java", "org.antlr.Tool", "-o", trgdir] + args + tobuild
-    # print cmd
-    subprocess.call(cmd)
+    exec_and_log(cmd)
 
 
 def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
@@ -387,11 +407,10 @@ def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
                "-package", package] + args + tobuild
     else:
         cmd = ["java", "org.antlr.v4.Tool", "-o", trgdir] + args + tobuild
-    # print string.join(cmd, " ")
-    subprocess.call(cmd)
+    exec_and_log(cmd)
 
 
-def java(classname, cp=None, version=None, vmargs=[], progargs=[], background=False):
+def java(classname, cp=None, version=None, vmargs=[], progargs=[]):
     global ERRORS
     if cp is None:
         cp = JARCACHE + "/*"
@@ -399,15 +418,7 @@ def java(classname, cp=None, version=None, vmargs=[], progargs=[], background=Fa
     if version is not None:
         j = os.path.join(jdk[version], "bin/java")
     cmd = [j, "-cp", cp] + vmargs + progargs + [classname]
-    print ' '.join(cmd)
-    if background:
-        # background cannot set bild errors
-        p = subprocess.Popen(cmd)
-        return p.pid
-    else:
-        exitcode = subprocess.call(cmd)
-        if exitcode!=0:
-            ERRORS += 1
+    exec_and_log(cmd)
 
 
 def javac(srcdir, trgdir=".", cp=None, version=None, args=[], skip=[]):
@@ -427,10 +438,7 @@ def javac(srcdir, trgdir=".", cp=None, version=None, args=[], skip=[]):
     if version is not None:
         javac = os.path.join(jdk[version], "bin/javac")
     cmd = [javac, "-d", trgdir, "-cp", cp] + args + tobuild
-    # print string.join(cmd, " ")
-    exitcode = subprocess.call(cmd)
-    if exitcode!=0:
-        ERRORS += 1
+    exec_and_log(cmd)
 
 
 def jar(jarfile, inputfiles=".", srcdir=".", manifest=None):
@@ -472,8 +480,8 @@ def javadoc(srcdir, trgdir, packages=None, classpath=None, title=None, exclude=N
         cmd += ["-subpackages", packages]
     if exclude is not None:
         cmd += ["-exclude", exclude]
-    print cmd
-    subprocess.call(cmd)
+    exec_and_log(cmd)
+
 
 def load_junitjars():
     junit_version = '4.11'
@@ -537,11 +545,12 @@ def junit_runner(testclasses, cp=None, verbose=False, args=[]):
         cp_ = cp + os.pathsep + cp_
     processes = []
     # launch all tests in srcdir in parallel
+    log("############# UNIT TESTS ######################")
     for c in testclasses:
         cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', c]
         if verbose:
             cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
-        # print ' '.join(cmd)
+        log(' '.join(cmd))
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         processes.append(p)
     # busy wait with sleep for any results
@@ -550,7 +559,9 @@ def junit_runner(testclasses, cp=None, verbose=False, args=[]):
             r = p.poll()
             if r is not None:  # p is done
                 processes.remove(p)
-                stdout, stderr = p.communicate()  # hush output
+                stdout, stderr = p.communicate()  # log output
+                log(stdout)
+                log(stderr)
                 print stdout,
                 summary = stdout.split('\n')[0]
                 if "0 failures" not in summary:
@@ -564,7 +575,7 @@ def dot(src, trgdir=".", format="pdf"):
     nosuffix = src[0:-4]
     base = os.path.basename(nosuffix)
     cmd = ["dot", "-T" + format, "-o" + os.path.join(trgdir, base + "." + format), src]
-    subprocess.call(cmd)
+    exec_and_log(cmd)
 
 
 def download(url, trgdir=".", force=False):
@@ -573,14 +584,18 @@ def download(url, trgdir=".", force=False):
     target_name = os.path.join(trgdir, file_name)
     if os.path.exists(target_name) and not force:
         return
+    log("download "+url)
     try:
         response = urllib2.urlopen(url)
     except urllib2.HTTPError, e:
-        sys.stderr.write("can't download %s: %s\n" % (url, str(e)))
+        msg = "can't download %s: %s\n" % (url, str(e))
+        sys.stderr.write(msg)
+        log(msg)
     else:
         output = open(target_name, 'wb')
         output.write(response.read())
         output.close()
+
 
 def wget(url, level=None, trgdir=None, proxy=None, verbose=False):
     """
@@ -605,16 +620,12 @@ def wget(url, level=None, trgdir=None, proxy=None, verbose=False):
     if level is not None:
         cmd += ["--level", str(level)]
     cmd += [url]
-    # print ', '.join(cmd)
-    p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out,err = p.communicate()
-    #print out
+    returncode, out, err = exec_and_log(cmd)
     if err is not None and len(err)>0:
         print "wget errors:"
         print err
-    if p.returncode!=0:
-        ERRORS += 1
-    return p.returncode
+    return returncode
+
 
 def diff(file1, file2, recursive=False):
     global ERRORS
@@ -622,14 +633,16 @@ def diff(file1, file2, recursive=False):
     if recursive:
         cmd += ["-r"]
     cmd += [file1, file2]
-    #print ', '.join(cmd)
+    log(' '.join(cmd))
     output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
     return output
 
+
 def scp(src, user, machine, trg):
-    subprocess.check_call(
-        ["scp", src, "%s@%s:%s" % (user, machine, trg)]
-    )
+    cmd = ["scp", src, "%s@%s:%s" % (user, machine, trg)]
+    log(cmd)
+    subprocess.check_call(cmd)
+
 
 def zip(zipfilename, srcdirs):  # , recursive=True):
     """
@@ -640,6 +653,7 @@ def zip(zipfilename, srcdirs):  # , recursive=True):
     """
     if isinstance(srcdirs, basestring):
         srcdirs = [srcdirs]
+    log("zip "+zipfilename+" "+' '.join(srcdirs))
     with zipfile.ZipFile(zipfilename, mode="w", compression=zipfile.ZIP_DEFLATED) as z:
         for srcdir in srcdirs:
             srcdir = uniformpath(srcdir)
@@ -649,6 +663,18 @@ def zip(zipfilename, srcdirs):  # , recursive=True):
                 z.write(f, f[rootnameindex:])
 
 
+def exec_and_log(cmd):
+    global ERRORS
+    log(' '.join(cmd))
+    p = subprocess.Popen(cmd)
+    out, err = p.communicate()
+    log(out)
+    log(err)
+    if p.returncode != 0:
+        ERRORS += 1
+    return p.returncode, out, err
+
+
 def python(filename, workingdir=".", args=[]):
     savedcwd = os.getcwd()
     os.chdir(workingdir)
@@ -656,7 +682,7 @@ def python(filename, workingdir=".", args=[]):
         if not isinstance(args, list):
             args = [args]
         cmd = [sys.executable, filename] + args
-        subprocess.call(cmd)
+        exec_and_log(cmd)
     finally:
         os.chdir(savedcwd)
 
@@ -672,13 +698,15 @@ def processargs(globals):
         try:
             target()
         except Exception as e:
-                print e
+            log(str(e))
+            print e
         if ERRORS>0 :
             print "bild failed"; sys.exit(1)
         else:
             print "bild succeeded"; sys.exit(0)
     else:
         sys.stderr.write("unknown target: %s\n" % sys.argv[1])
+
 
 def mvn_install(binjar, srcjar, docjar, groupid, artifactid, version):
     cmd = ["mvn", "install:install-file" ]

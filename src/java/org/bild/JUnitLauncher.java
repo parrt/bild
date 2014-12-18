@@ -58,7 +58,8 @@ public class JUnitLauncher {
 			for (Failure f:results.getFailures()) {
 				String methodName = "\t"+f.getTestHeader().replaceAll("\\(.*?\\)", "()");
 				System.out.println(methodName+": "+f.getMessage());
-				if ( verbose ) {
+				String exceptionName = f.getException().getClass().getSimpleName();
+				if ( verbose || !exceptionName.equals("AssertionError") ) {
 					System.out.println(f.getTrace());
 				}
 			}

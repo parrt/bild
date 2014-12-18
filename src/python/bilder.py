@@ -30,13 +30,26 @@ def log(msg):
         logfile = open(BILD_LOG_DIR+"/bild.log", "w") # assume this closes upon Python exit
     if msg is None:
         return
+    msg = msg.strip()
+    if len(msg)==0:
+        return
     caller = inspect.currentframe().f_back.f_code.co_name
-    if caller!="require":
-        line = inspect.currentframe().f_back.f_lineno
-        # print "LOGGING %s line %d: %s" % (caller,line,msg)
-        logfile.write("%s line %d: %s\n" % (caller,line,msg))
-    else:
-        logfile.write("%s\n" % msg)
+    line = inspect.currentframe().f_back.f_lineno
+    filename = os.path.basename(inspect.currentframe().f_back.f_code.co_filename)
+    prefix = time.strftime('%x %X')
+
+    if inspect.currentframe().f_back is not None:
+        filename2 = inspect.currentframe().f_back.f_back.f_code.co_filename
+        line2 = inspect.currentframe().f_back.f_back.f_lineno
+
+    if caller=="require":
+        logfile.write("[%s] %s\n" % (prefix,msg))
+    elif caller=="exec_and_log":
+        caller = inspect.currentframe().f_back.f_back.f_code.co_name
+        line = inspect.currentframe().f_back.f_back.f_lineno
+        filename2 = inspect.currentframe().f_back.f_back.f_back.f_code.co_filename
+        line2 = inspect.currentframe().f_back.f_back.f_back.f_lineno
+    logfile.write("[%s %s %s:%d %s:%d] %s\n" % (prefix,caller,filename2,line2,filename,line,msg))
 
 
 def findjdks_win():
@@ -516,7 +529,7 @@ def junit(srcdir, cp=None, verbose=False, args=[]):
             cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
         else:
             cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', c]
-        # print ' '.join(cmd)
+        log(' '.join(cmd))
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         processes.append(p)
     # busy wait with sleep for any results
@@ -526,11 +539,14 @@ def junit(srcdir, cp=None, verbose=False, args=[]):
             if r is not None:  # p is done
                 processes.remove(p)
                 stdout, stderr = p.communicate()  # hush output
+                log(stdout)
+                log(stderr)
                 print stdout,
                 summary = stdout.split('\n')[0]
                 if "0 failures" not in summary:
                     ERRORS += 1
         time.sleep(0.200)
+
 
 def junit_runner(testclasses, cp=None, verbose=False, args=[]):
     global ERRORS

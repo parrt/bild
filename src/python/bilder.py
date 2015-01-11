@@ -449,6 +449,7 @@ def javac(srcdir, trgdir=".", cp=None, javacVersion=None, version=None, args=(),
     javac = "javac" # use default system javac if no javacVersion
     if javacVersion is not None:
         javac = os.path.join(jdk[javacVersion], "bin/javac")
+    exec_and_log([javac, "-version"])
     cmd = [javac, "-d", trgdir, "-cp", cp, "-source", version, "-target", version] + args + tobuild
     exec_and_log(cmd)
 
@@ -681,7 +682,7 @@ def zip(zipfilename, srcdirs):  # , recursive=True):
 def exec_and_log(cmd):
     global ERRORS
     log(' '.join(cmd))
-    p = subprocess.Popen(cmd)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
     log(out)
     log(err)

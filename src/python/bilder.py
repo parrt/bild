@@ -219,7 +219,7 @@ def replsuffix(files, suffix):
     return outfiles
 
 
-def javac_targets(srcdir, trgdir, skip=()):
+def javac_targets(srcdir, trgdir, skip=[]):
     """
     Return a map<string,string> of files javac would create given a subdir of java
     files and a target dir. E.g.,
@@ -382,7 +382,7 @@ def require(target):
         raise Exception()
 
 
-def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=()):
+def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=[]):
     srcdir = uniformpath(srcdir)
     trgdir = uniformpath(trgdir)
     map = antlr3_targets(srcdir, trgdir, package)
@@ -402,7 +402,7 @@ def antlr3(srcdir, trgdir=".", package=None, version="3.5.1", args=()):
     exec_and_log(cmd)
 
 
-def antlr4(srcdir, trgdir=".", package=None, version="4.4", args=()):
+def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
     srcdir = uniformpath(srcdir)
     trgdir = uniformpath(trgdir)
     map = antlr4_targets(srcdir, trgdir, package)
@@ -423,7 +423,7 @@ def antlr4(srcdir, trgdir=".", package=None, version="4.4", args=()):
     exec_and_log(cmd)
 
 
-def java(classname, cp=None, version=None, vmargs=(), progargs=()):
+def java(classname, cp=None, version=None, vmargs=[], progargs=[]):
     global ERRORS
     if cp is None:
         cp = JARCACHE + "/*"
@@ -509,7 +509,7 @@ def load_junitjars():
     return JARCACHE + "/" + junit_jar, JARCACHE + "/" + hamcrest_jar
 
 
-def junit(srcdir, cp=None, verbose=False, args=()):
+def junit(srcdir, cp=None, verbose=False, args=[]):
     global ERRORS
     hamcrest_jar, junit_jar = load_junitjars()
     download("https://github.com/parrt/bild/raw/master/lib/bild-junit.jar", JARCACHE)
@@ -548,7 +548,7 @@ def junit(srcdir, cp=None, verbose=False, args=()):
         time.sleep(0.200)
 
 
-def junit_runner(testclasses, cp=None, verbose=False, args=()):
+def junit_runner(testclasses, cp=None, verbose=False, args=[]):
     global ERRORS
     if isinstance(testclasses, basestring):
             testclasses = [testclasses]
@@ -691,7 +691,7 @@ def exec_and_log(cmd):
     return p.returncode, out, err
 
 
-def python(filename, workingdir=".", args=()):
+def python(filename, workingdir=".", args=[]):
     savedcwd = os.getcwd()
     os.chdir(workingdir)
     try:

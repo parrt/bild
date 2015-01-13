@@ -735,5 +735,24 @@ def mvn_install(binjar, srcjar, docjar, groupid, artifactid, version):
     cmd += ["-Dpackaging=jar"]
     cmd += ["-DgeneratePom=true"]
     cmd += ["-DcreateChecksum=true"]
-    print cmd
-    subprocess.call(cmd)
+    exec_and_log(cmd)
+
+def mvn_deploy(dir, groupid, artifactid, version, project, pomfile, repositoryid="ossrh",
+               url="https://oss.sonatype.org/content/repositories/snapshots"):
+    binjar = uniformpath("%s/%s-%s-complete.jar" % (dir,project,version))
+    docjar = uniformpath("%s/%s-%s-complete-javadoc.jar" % (dir,project,version))
+    srcjar = uniformpath("%s/%s-%s-complete-sources.jar" % (dir,project,version))
+    cmd = ["mvn", "deploy:deploy-file",
+           "-Durl="+url,
+           "-DrepositoryId="+repositoryid,
+           "-Dfile="+binjar,
+           "-Dsources="+srcjar,
+           "-Djavadoc="+docjar,
+           "-DgroupId="+groupid,
+           "-DartifactId="+artifactid,
+           "-Dversion="+version,
+           "-Dpackaging=jar",
+           "-DpomFile="+pomfile,
+           "-DuniqueVersion=true",
+           "-DgeneratePom=false"]
+    exec_and_log(cmd)

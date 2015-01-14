@@ -13,6 +13,7 @@ import fnmatch
 import inspect
 import time
 import string
+import traceback
 
 # evil globals
 _ = None
@@ -169,7 +170,16 @@ def allfiles(dir, pattern="*"):
     """
     Return list<string> all files in subtree dir, optionally matching
     a pattern spec like "*.java"
+
+    If dir is list<string> or list<list<string>>, etc... assume it
+    is a list of directories and collect the result of recursively executing
+    this function on each directory
     """
+    if isinstance(dir, list):
+        combined = []
+        for d in dir:
+            combined += allfiles(d, pattern)
+        return combined
     dir = uniformpath(dir)
     if not os.path.isdir(dir):  # must be file
         return [dir]
@@ -324,7 +334,7 @@ def newer(a, b):
     """
     Return true if a newer than b
     """
-    return modtime(a) < modtime(b)  # smaller is earlier
+    return modtime(a) > modtime(b)  # larger is earlier
 
 
 def older(a, b):
@@ -333,6 +343,16 @@ def older(a, b):
     """
     return not newer(a, b)
 
+def newest(files):
+    """
+    From list<string> filenames, return newest file (according to modtime)
+    """
+    newest_file = None
+    for f in files:
+        # print f, modtime(f), modtime(newest_file)
+        if newer(f,newest_file):
+            newest_file = f
+    return newest_file
 
 def stale(map):  # accept map<string,string> or map<string,list<string>>
     """
@@ -361,7 +381,8 @@ def stale(map):  # accept map<string,string> or map<string,list<string>>
 
 
 def isstale(src, trg):
-    return modtime(trg) < modtime(src)  # smaller is earlier
+    return not os.path.exists(trg) or \
+           newer(src,trg)
 
 
 def require(target):
@@ -667,6 +688,7 @@ def zip(zipfilename, srcdirs):  # , recursive=True):
 
     srcdir might expand to /Volumes/SSD2/Users/parrt/antlr/code/antlr4/doc/Java
     """
+    mkdir(os.path.dirname(zipfilename))
     if isinstance(srcdirs, basestring):
         srcdirs = [srcdirs]
     log("zip "+zipfilename+" "+' '.join(srcdirs))
@@ -704,7 +726,7 @@ def python(filename, workingdir=".", args=[]):
 
 
 def processargs(globals):
-    global ERRORS
+    global ERRORS, logfile
     if len(sys.argv) == 1:
         target = globals["all"]
     else:
@@ -714,8 +736,9 @@ def processargs(globals):
         try:
             target()
         except Exception as e:
+            traceback.print_exc(file=sys.stderr)
             log(str(e))
-            print e
+            traceback.print_exc(file=logfile)
         if ERRORS>0 :
             print "bild failed"; sys.exit(1)
         else:

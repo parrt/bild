@@ -737,22 +737,39 @@ def mvn_install(binjar, srcjar, docjar, groupid, artifactid, version):
     cmd += ["-DcreateChecksum=true"]
     exec_and_log(cmd)
 
-def mvn_deploy(dir, groupid, artifactid, version, project, pomfile, repositoryid="ossrh",
+""" Do something like this
+mvn deploy:deploy-file
+    -Durl=https://oss.sonatype.org/content/repositories/snapshots
+    -DrepositoryId=ossrh
+    -Dfile=/Users/parrt/antlr/code/antlr4/dist/antlr4-4.5-SNAPSHOT.jar
+    -Dsources=/Users/parrt/antlr/code/antlr4/dist/antlr4-4.5-SNAPSHOT-javadoc.jar
+    -Djavadoc=/Users/parrt/antlr/code/antlr4/dist/antlr4-4.5-SNAPSHOT-sources.jar
+    -DgroupId=org.antlr
+    -DartifactId=antlr4-runtime
+    -Dversion=4.5-SNAPSHOT
+    -DpomFile=/Users/parrt/antlr/code/antlr4/runtime/Java/pom.xml
+    -DuniqueVersion=true
+    -Dpackaging=jar
+    -DgeneratePom=false
+"""
+def mvn_deploy(binjar, srcjar, docjar,
+               groupid, artifactid, version, repositoryid, pomfile,
                url="https://oss.sonatype.org/content/repositories/snapshots"):
-    binjar = uniformpath("%s/%s-%s-complete.jar" % (dir,project,version))
-    docjar = uniformpath("%s/%s-%s-complete-javadoc.jar" % (dir,project,version))
-    srcjar = uniformpath("%s/%s-%s-complete-sources.jar" % (dir,project,version))
-    cmd = ["mvn", "deploy:deploy-file",
-           "-Durl="+url,
-           "-DrepositoryId="+repositoryid,
-           "-Dfile="+binjar,
-           "-Dsources="+srcjar,
-           "-Djavadoc="+docjar,
-           "-DgroupId="+groupid,
-           "-DartifactId="+artifactid,
-           "-Dversion="+version,
-           "-Dpackaging=jar",
-           "-DpomFile="+pomfile,
-           "-DuniqueVersion=true",
-           "-DgeneratePom=false"]
+    cmd =  ["mvn", "deploy:deploy-file"]
+    cmd += ["-Durl="+url]
+    if repositoryid:
+        cmd += ["-DrepositoryId="+repositoryid]
+    cmd += ["-Dfile="+binjar]
+    if srcjar:
+        cmd += ["-Dsources="+srcjar]
+    if docjar:
+        cmd += ["-Djavadoc="+docjar]
+    cmd += ["-DgroupId="+groupid]
+    cmd += ["-DartifactId="+artifactid]
+    cmd += ["-Dversion="+version]
+    cmd += ["-Dpackaging=jar"]
+    if pomfile:
+        cmd += ["-DpomFile="+pomfile]
+    cmd += ["-DuniqueVersion=true"]
+    cmd += ["-DgeneratePom=false"]
     exec_and_log(cmd)

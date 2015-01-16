@@ -511,6 +511,16 @@ def unjar(jarfile, trgdir="."):
     jar.close()
 
 
+def make_osgi_ready(jarfile, osgijarfile):
+    """
+    Create a new jar file from old, using its MANIFEST file and add extra
+    stuff needed by OSGi.
+    """
+    download("https://github.com/bndtools/bnd/releases/download/2.4.0.REL/biz.aQute.bnd-2.4.0.jar", JARCACHE)
+    cmd = ["java", "-jar", JARCACHE+"/biz.aQute.bnd-2.4.0.jar", "wrap", "--output", osgijarfile, jarfile]
+    exec_and_log(cmd)
+
+
 def javadoc(srcdir, trgdir, packages=None, classpath=None, title=None, exclude=None):
     if isinstance(srcdir, list):
         srcdir = ":".join(srcdir)

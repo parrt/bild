@@ -25,10 +25,20 @@ JARCACHE = os.path.join(BILD, "jars")
 ERRORS=0  # increment this when error found so we can set exit value
 # CLASSPATH = JARCACHE + "/*" + os.pathsep + os.environ['CLASSPATH']
 
+def script_name(): # return name of script that is invoking bilder lib minus the ".py"
+    frames = inspect.getouterframes(inspect.currentframe())
+    scriptframe = frames[-1]
+    scriptname = scriptframe[1]
+    scriptname = os.path.basename(scriptname)
+    scriptname = scriptname[:-3]
+    return scriptname
+
+
 def log(msg):
     global logfile
     if logfile==None:
-        logfile = open(BILD_LOG_DIR+"/bild.log", "w") # assume this closes upon Python exit
+        scriptname = script_name()
+        logfile = open(BILD_LOG_DIR+"/"+scriptname+".log", "w") # assume this closes upon Python exit
     if msg is None:
         return
     msg = msg.strip()

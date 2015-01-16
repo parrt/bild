@@ -128,6 +128,15 @@ def chkjava(version):
             print javahome+" not set, using system default: "+v
 """
 
+def get_java_version():
+    p = subprocess.Popen(["java", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out,err = p.communicate()
+    # java version "1.7.0_65"
+    vline = err.split("\n")[0]
+    vquote = vline.split(" ")[2]
+    v = vquote.replace('"',"")
+    return v
+
 def modtime(fname):
     try:
         return os.path.getmtime(fname)
@@ -449,7 +458,7 @@ def javac(srcdir, trgdir=".", cp=None, javacVersion=None, version=None, args=(),
     javac = "javac" # use default system javac if no javacVersion
     if javacVersion is not None:
         javac = os.path.join(jdk[javacVersion], "bin/javac")
-    exec_and_log([javac, "-version"])
+    log(get_java_version())
     cmd = [javac, "-d", trgdir, "-cp", cp, "-source", version, "-target", version] + args + tobuild
     exec_and_log(cmd)
 

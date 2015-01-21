@@ -813,10 +813,10 @@ def mvn_deploy(binjar, srcjar, docjar,
 def processargs(globals):
     global ERRORS, logfile, debug
     target_index = 1
-    if "-debug" in sys.argv:
+    if len(sys.argv)>1 and sys.argv[1]=="-debug":
         debug = True
         target_index = 2
-    if target_index > len(sys.argv):
+    if target_index >= len(sys.argv):
         target = globals["all"]
     else:
         target = globals[sys.argv[target_index]]

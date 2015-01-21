@@ -17,6 +17,7 @@ import traceback
 
 # evil globals
 _ = None
+debug = False
 BILD_LOG_DIR = "."      # where to generate bild.log
 logfile = None
 bild_completed = set()  # which *targets* have been built.
@@ -60,7 +61,11 @@ def log(msg):
         line = inspect.currentframe().f_back.f_back.f_lineno
         filename2 = inspect.currentframe().f_back.f_back.f_back.f_code.co_filename
         line2 = inspect.currentframe().f_back.f_back.f_back.f_lineno
-    logfile.write("[%s %s %s:%d %s:%d] %s\n" % (prefix,caller,filename2,line2,filename,line,msg))
+    fullmsg = "[%s %s %s:%d %s:%d] %s\n" % (
+    prefix, caller, filename2, line2, filename, line, msg)
+    logfile.write(fullmsg)
+    if debug:
+        print fullmsg,
 
 
 def findjdks_win():
@@ -754,28 +759,6 @@ def python(filename, workingdir=".", args=[]):
         os.chdir(savedcwd)
 
 
-def processargs(globals):
-    global ERRORS, logfile
-    if len(sys.argv) == 1:
-        target = globals["all"]
-    else:
-        target = globals[sys.argv[1]]
-    if target is not None:
-        print "target", target.__name__
-        try:
-            target()
-        except Exception as e:
-            traceback.print_exc(file=sys.stderr)
-            log(str(e))
-            traceback.print_exc(file=logfile)
-        if ERRORS>0 :
-            print "bild failed"; sys.exit(1)
-        else:
-            print "bild succeeded"; sys.exit(0)
-    else:
-        sys.stderr.write("unknown target: %s\n" % sys.argv[1])
-
-
 def mvn_install(binjar, srcjar, docjar, groupid, artifactid, version):
     cmd = ["mvn", "install:install-file" ]
     cmd += ["-Dfile=" + uniformpath(binjar) ]
@@ -825,3 +808,29 @@ def mvn_deploy(binjar, srcjar, docjar,
     cmd += ["-DuniqueVersion=true"]
     cmd += ["-DgeneratePom=false"]
     exec_and_log(cmd)
+
+
+def processargs(globals):
+    global ERRORS, logfile, debug
+    target_index = 1
+    if "-debug" in sys.argv:
+        debug = True
+        target_index = 2
+    if target_index > len(sys.argv):
+        target = globals["all"]
+    else:
+        target = globals[sys.argv[target_index]]
+    if target is not None:
+        print "target", target.__name__
+        try:
+            target()
+        except Exception as e:
+            traceback.print_exc(file=sys.stderr)
+            log(str(e))
+            traceback.print_exc(file=logfile)
+        if ERRORS>0 :
+            print "bild failed"; sys.exit(1)
+        else:
+            print "bild succeeded"; sys.exit(0)
+    else:
+        sys.stderr.write("unknown target: %s\n" % sys.argv[target_index])

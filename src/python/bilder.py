@@ -183,6 +183,12 @@ def rmdir(dir):
     shutil.rmtree(dir, ignore_errors=True)
 
 
+def rmfile(filename):
+    """remove this file if it exists; do not give an error if it is not exist"""
+    if os.path.isfile(filename):
+        os.remove(filename)
+
+
 def files(pathspec):
     """
     Get all files matching pathspec (nonrecursive)

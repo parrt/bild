@@ -741,6 +741,11 @@ def zip(zipfilename, srcdirs):  # , recursive=True):
                 z.write(f, f[rootnameindex:])
 
 
+def print_and_log(msg):
+    print msg
+    log(msg)
+
+
 def exec_and_log(cmd):
     global ERRORS
     log(' '.join(cmd))

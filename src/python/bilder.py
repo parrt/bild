@@ -798,11 +798,11 @@ mvn deploy:deploy-file
     -Dpackaging=jar
     -DgeneratePom=false
 """
-def mvn_deploy(command,
-               binjar, srcjar, docjar, pomfile,
-               groupid=None, artifactid=None, version=None, repositoryid=None,
-               packaging="jar",
-               url="https://oss.sonatype.org/content/repositories/snapshots"):
+def mvn(command,
+        binjar, srcjar, docjar, pomfile,
+        groupid=None, artifactid=None, version=None, repositoryid=None,
+        packaging="jar",
+        url="https://oss.sonatype.org/content/repositories/snapshots"):
     cmd =  ["mvn", command]
     cmd += ["-Durl="+url]
     if repositoryid:
@@ -814,7 +814,8 @@ def mvn_deploy(command,
         cmd += ["-Djavadoc="+docjar]
     if groupid:
         cmd += ["-DgroupId="+groupid]
-    cmd += ["-DartifactId="+artifactid]
+    if artifactid:
+        cmd += ["-DartifactId="+artifactid]
     if version:
         cmd += ["-Dversion="+version]
     cmd += ["-Dpackaging=jar"]

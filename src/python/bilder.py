@@ -485,7 +485,7 @@ def java(classname, cp=None, version=None, vmargs=[], progargs=[]):
     exec_and_log(cmd)
 
 
-def javac(srcdir, trgdir=".", cp=None, javacVersion=None, version=None, args=(), skip=()):
+def javac(srcdir, trgdir=".", cp=None, javacVersion=None, version=None, args=[], skip=[]):
     global ERRORS
     srcdir = uniformpath(srcdir)
     trgdir = uniformpath(trgdir)
@@ -501,7 +501,13 @@ def javac(srcdir, trgdir=".", cp=None, javacVersion=None, version=None, args=(),
     if javacVersion is not None:
         javac = os.path.join(jdk[javacVersion], "bin/javac")
     log(get_java_version())
-    cmd = [javac, "-d", trgdir, "-cp", cp, "-source", version, "-target", version] + args + tobuild
+    cmd = [javac, "-d", trgdir, "-cp", cp]
+    if version:
+        cmd += ["-source", version]
+        cmd += ["-target", version]
+    if args:
+        cmd += args
+    cmd += tobuild
     exec_and_log(cmd)
 
 

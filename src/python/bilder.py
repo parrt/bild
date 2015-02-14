@@ -481,7 +481,7 @@ def java(classname, cp=None, version=None, vmargs=[], progargs=[]):
     j = "java"
     if version is not None:
         j = os.path.join(jdk[version], "bin/java")
-    cmd = [j, "-cp", cp] + vmargs + progargs + [classname]
+    cmd = [j, "-cp", cp] + vmargs + [classname] + progargs
     exec_and_log(cmd)
 
 

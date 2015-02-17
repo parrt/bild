@@ -634,22 +634,18 @@ def junit_runner(testclasses, cp=None, verbose=False, args=[]):
             cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
         log(' '.join(cmd))
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        processes.append(p)
-    # busy wait with sleep for any results
-    while len(processes) > 0:
-        for p in processes:
-            r = p.poll()
-            if r is not None:  # p is done
-                processes.remove(p)
-                stdout, stderr = p.communicate()  # log output
-                log(stdout)
-                log(stderr)
-                print stdout,
-                summary = stdout.split('\n')[0]
-                if "0 failures" not in summary:
-                    ERRORS += 1
-        time.sleep(0.200)
+        stdout, stderr = p.communicate()  # log output
+        print "len stdout=%d, stderr=%d\n" % (len(stdout),len(stderr))
+        if len(stdout)>2000: stdout = stdout[0:2000]+"..."
+        if len(stderr)>2000: stderr = stderr[0:2000]+"..."
+        log(stdout)
+        log(stderr)
+        print stdout,
+        summary = stdout.split('\n')[0]
+        if "0 failures" not in summary:
+            ERRORS += 1
     print "Tests complete"
+
 
 def dot(src, trgdir=".", format="pdf"):
     if not src.endswith(".dot"):

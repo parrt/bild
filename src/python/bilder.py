@@ -463,14 +463,13 @@ def antlr4(srcdir, trgdir=".", package=None, version="4.3", args=[]):
     jarname = "antlr-" + version + "-complete.jar"
     # if jarname not in filelist(JARCACHE):
     download("http://www.antlr.org/download/" + jarname, JARCACHE)
+    cmd = ["java", "-cp", os.path.join(JARCACHE, jarname), "org.antlr.v4.Tool"]
     if package is not None:
         packageAsDir = re.sub('[.]', '/', package)
-        cmd = ["java", "-cp", os.path.join(JARCACHE, jarname),
-               "org.antlr.v4.Tool",
-               "-o", os.path.join(trgdir, packageAsDir),
-               "-package", package] + args + tobuild
+        cmd += ["-package", package, "-o", os.path.join(trgdir, packageAsDir)]
     else:
-        cmd = ["java", "org.antlr.v4.Tool", "-o", trgdir] + args + tobuild
+        cmd += ["-o", trgdir]
+    cmd += args + tobuild
     exec_and_log(cmd)
 
 

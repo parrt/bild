@@ -14,6 +14,7 @@ import inspect
 import time
 import string
 import traceback
+import threading
 
 # evil globals
 _ = None

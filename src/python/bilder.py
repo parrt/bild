@@ -614,8 +614,17 @@ def junit(srcdir, cp=None, verbose=False, args=[]):
         time.sleep(0.200)
 
 
-def junit_runner(testclasses, cp=None, verbose=False, args=[]):
+def junit_runner(testclasses, cp=None, verbose=False, timeout=5, args=[]):
     global ERRORS
+    def killme(p):
+        if p.poll() is None:
+            log('Error: junit timeout')
+            try:
+                p.kill()
+            except OSError as e:
+                if e.errno != errno.ESRCH:
+                    raise
+
     if isinstance(testclasses, basestring):
             testclasses = [testclasses]
     hamcrest_jar, junit_jar = load_junitjars()
@@ -634,8 +643,10 @@ def junit_runner(testclasses, cp=None, verbose=False, args=[]):
             cmd = ['java'] + args + ['-cp', cp_, 'org.bild.JUnitLauncher', '-verbose', c]
         log(' '.join(cmd))
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        t = threading.Timer(timeout, killme, [p] )
+        t.start()
         stdout, stderr = p.communicate()  # log output
-        print "len stdout=%d, stderr=%d\n" % (len(stdout),len(stderr))
+        t.cancel()
         if len(stdout)>2000: stdout = stdout[0:2000]+"..."
         if len(stderr)>2000: stderr = stderr[0:2000]+"..."
         log(stdout)

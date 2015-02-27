@@ -724,8 +724,9 @@ def diff(file1, file2, recursive=False):
         cmd += ["-r"]
     cmd += [file1, file2]
     log(' '.join(cmd))
-    output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-    return output
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    return err+"\n"+out
 
 
 def scp(src, user, machine, trg):

@@ -563,10 +563,8 @@ def javadoc(srcdir, trgdir, packages=None, classpath=None, title=None, exclude=N
     exec_and_log(cmd)
 
 
-def load_junitjars():
-    junit_version = '4.11'
+def load_junitjars(junit_version = '4.11', hamcrest_version = '1.3'):
     junit_jar = 'junit-' + junit_version + '.jar'
-    hamcrest_version = '1.3'
     hamcrest_jar = 'hamcrest-core-' + hamcrest_version + '.jar'
     download("http://search.maven.org/remotecontent?filepath=junit/junit/" + junit_version + "/" + junit_jar,
              JARCACHE)
